@@ -1,15 +1,14 @@
-from flask import jsonify
-from werkzeug.http import HTTP_STATUS_CODES
+#coding:utf-8
+from flask_restful import Api, Resource
 
+from app.api import bp
+from app.api.apps import App, Apps
+from app.api.subapps import SubApp, SubApps
 
-def error_response(status_code, message=None):
-    payload = {'error': HTTP_STATUS_CODES.get(status_code, 'Unknown error')}
-    if message:
-        payload['message'] = message
-    response = jsonify(payload)
-    response.status_code = status_code
-    return response
+api = Api(bp)
 
+api.add_resource(Apps, '/apps')
+api.add_resource(App, '/apps/<appid>')
 
-def bad_request(message):
-    return error_response(400, message)
+api.add_resource(SubApps, '/subapps')
+api.add_resource(SubApp, '/subapps/<subappid>')

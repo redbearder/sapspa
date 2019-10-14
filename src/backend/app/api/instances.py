@@ -1,41 +1,44 @@
-from flask import jsonify, request, url_for, g, abort
-from flask_restful import Resource, Api
+from flask import abort, g, jsonify, request, url_for
+from flask_restful import Api, Resource
+
 from app import db
-from app.models import HostModel, HostSchema
-from app.api.utils import bad_request, query_request, normal_request
+from app.api.utils import bad_request, normal_request, query_request
+from app.models import InstanceModel, InstanceSchema
 
-host_schema = HostSchema()
-hosts_schema = HostSchema(many=True)
-
-
-class Hosts(Resource):
-   def get(self):
-     #返回所有数据
-     page = request.args.get('page', 1, type=int)
-     pagesize = min(request.args.get('pagesize', 50, type=int), 100)
-     data = HostModel.query.paginate(page, pagesize)
-     # data = App.query.all()
-     hosts_result = hosts_schema.dump(data.items)
-     return query_request(hosts_result)
-   def post(self):
-     #新增数据
-     data = request.get_json()
-     hostschema = host_schema.load(data)
-     host = HostModel(**hostschema)
-     db.session.add(host)
-     db.session.commit()
-     return normal_request('create host success')
+instance_schema = InstanceSchema()
+instances_schema = InstanceSchema(many=True)
 
 
-class App(Resource):
-   def get(self, hostid):
-     #返回所有数据
-     app = HostModel.query.get(hostid)
-     app_result = host_schema.dump(app)
-     return query_request(app_result)
-   def put(self, hostid):
-     #新增数据
-     data = request.get_json()
-     app = HostModel.query.filter_by(hostid=hostid).update(data)
-     db.session.commit()
-     return normal_request('update host success')
+class Instances(Resource):
+    def get(self):
+        # 返回所有数据
+        page = request.args.get("page", 1, type=int)
+        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        data = InstanceModel.query.paginate(page, pagesize)
+        # data = App.query.all()
+        instances_result = InstanceSchema.dump(data.items)
+        return query_request(instances_result)
+
+    def post(self):
+        # 新增数据
+        data = request.get_json()
+        instanceschema = instance_schema.load(data)
+        instance = InstanceModel(**instanceschema)
+        db.session.add(instance)
+        db.session.commit()
+        return normal_request("create instance success")
+
+
+class Instace(Resource):
+    def get(self, instanceid):
+        # 返回所有数据
+        app = InstanceModel.query.get(instanceid)
+        app_result = instance_schema.dump(app)
+        return query_request(app_result)
+
+    def put(self, instanceid):
+        # 新增数据
+        data = request.get_json()
+        app = InstanceModel.query.filter_by(instanceid=instanceid).update(data)
+        db.session.commit()
+        return normal_request("update instance success")
