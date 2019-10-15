@@ -16,7 +16,7 @@ class Instances(Resource):
         pagesize = min(request.args.get("pagesize", 50, type=int), 100)
         data = InstanceModel.query.paginate(page, pagesize)
         # data = App.query.all()
-        instances_result = InstanceSchema.dump(data.items)
+        instances_result = instances_schema.dump(data.items)
         return query_request(instances_result)
 
     def post(self):
@@ -30,15 +30,14 @@ class Instances(Resource):
 
 
 class Instace(Resource):
-    def get(self, instanceid):
+    def get(self, instid):
         # 返回所有数据
-        app = InstanceModel.query.get(instanceid)
+        app = InstanceModel.query.get(instid)
         app_result = instance_schema.dump(app)
         return query_request(app_result)
 
-    def put(self, instanceid):
-        # 新增数据
+    def put(self, instid):
         data = request.get_json()
-        app = InstanceModel.query.filter_by(instanceid=instanceid).update(data)
+        app = InstanceModel.query.filter_by(instid=instid).update(data)
         db.session.commit()
         return normal_request("update instance success")

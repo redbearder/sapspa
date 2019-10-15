@@ -111,7 +111,7 @@ class InstanceModel(db.Model):
                        primary_key=True,
                        autoincrement=True,
                        comment='instance unique id')
-    instanceid = db.Column(db.String(10),
+    instanceid = db.Column(db.String(20),
                            nullable=False,
                            index=True,
                            comment='instance id')
