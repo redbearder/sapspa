@@ -72,6 +72,9 @@ class SubappModel(db.Model):
                           comment='subapp update datetime')
     app = db.relationship('AppModel', foreign_keys=[appid])
 
+    __table_args__ = (db.UniqueConstraint('subappsid', 'appid',
+                                          name='uix_1'), )
+
 
 class HostModel(db.Model):
     __tablename__ = 'host'
