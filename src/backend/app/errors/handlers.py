@@ -1,7 +1,7 @@
 from flask import render_template, request
 
 from app import db
-from app.api.utils import error_response as api_error_response
+from app.utils import error_response as api_error_response
 from app.errors import bp
 
 

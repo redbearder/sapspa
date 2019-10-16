@@ -21,6 +21,7 @@ login = LoginManager()
 # login.login_message = _l('Please log in to access this page.')
 mail = Mail()
 
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -38,7 +39,10 @@ def create_app(config_class=Config):
     app.register_blueprint(errors_bp)
 
     from app.api import bp as api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
+
+    from app.mapi import bp as mapi_bp
+    app.register_blueprint(mapi_bp, url_prefix='/mapi/v1')
 
     if not app.debug and not app.testing:
         '''
@@ -67,10 +71,11 @@ def create_app(config_class=Config):
             if not os.path.exists('logs'):
                 os.mkdir('logs')
             file_handler = RotatingFileHandler('logs/sapspa.log',
-                                               maxBytes=10240, backupCount=10)
-            file_handler.setFormatter(logging.Formatter(
-                '%(asctime)s %(levelname)s: %(message)s '
-                '[in %(pathname)s:%(lineno)d]'))
+                                               maxBytes=10240,
+                                               backupCount=10)
+            file_handler.setFormatter(
+                logging.Formatter('%(asctime)s %(levelname)s: %(message)s '
+                                  '[in %(pathname)s:%(lineno)d]'))
             file_handler.setLevel(logging.INFO)
             app.logger.addHandler(file_handler)
 
