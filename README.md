@@ -28,7 +28,7 @@
 - [ ] dump status
 - [ ] instance status
 - [ ] transport status
-- [ ] rfc resource status
+- [ ] rfc resource statusbo
 - [ ] os monitor
 - [ ] mysql monitor
 - [ ] es monitor

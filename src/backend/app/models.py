@@ -20,6 +20,34 @@ from app.search import add_to_index, query_index, remove_from_index
 ##### MODELS #####
 
 
+class UserModel(db.Model):
+    __tablename__ = 'user'
+    uid = db.Column(db.Integer,
+                    primary_key=True,
+                    autoincrement=True,
+                    comment='user unique id')
+    username = db.Column(db.String(50),
+                         nullable=False,
+                         index=True,
+                         comment='user name')
+    password = db.Column(db.String(100),
+                         nullable=False,
+                         comment='user password')
+    userdomain = db.Column(db.String(100),
+                           nullable=False,
+                           comment='user domain name')
+    createdAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          comment='user create datetime')
+    updatedAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          onupdate=db.func.now(),
+                          comment='user update datetime')
+
+    def __repr__(self):
+        return '<UserModel {}>'.format(self.username)
+
+
 class AppModel(db.Model):
     __tablename__ = 'app'
     appid = db.Column(db.Integer,
@@ -138,6 +166,17 @@ def must_not_be_blank(data):
 
 
 ##### SCHEMAS #####
+
+
+class UserSchema(Schema):
+    uid = fields.Int(dump_only=True)
+    username = fields.Str(required=True,
+                          validate=validate.Length(min=5, max=20))
+    password = fields.Str(required=True,
+                          validate=validate.Length(min=8, max=20))
+    userdomain = fields.Str(validate=validate.Length(min=3, max=255))
+    createdAt = fields.DateTime(dump_only=True)
+    updatedAt = fields.DateTime(dump_only=True)
 
 
 class AppSchema(Schema):
