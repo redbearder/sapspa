@@ -144,13 +144,17 @@ class R3rfcconn(object):
         result = self.conn.call(read_table_fm, **kwparam)
         return json.dumps(result, cls=JsonCustomEncoder)
 
-    def get_server_wpinfo(self, servername):
-        result = self.conn.call('TH_WPINFO',
-                                SRVNAME=servername,
-                                WITH_CPU='00',
-                                WITH_MTX_INFO=0,
-                                MAX_ELEMS=0)
+    def get_rfc_data(self, fm: str, **kwparam: dict):
+        result = self.conn.call(fm, **kwparam)
         return json.dumps(result, cls=JsonCustomEncoder)
+
+    def get_server_wpinfo(self, servername):
+        kwparam = {}
+        kwparam['SRVNAME'] = servername
+        kwparam['WITH_CPU'] = '00'
+        kwparam['WITH_MTX_INFO'] = 0
+        kwparam['MAX_ELEMS'] = 0
+        return self.get_rfc_data('TH_WPINFO', **kwparam)
 
     def close(self):
         self.conn.close()
