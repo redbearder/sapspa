@@ -15,21 +15,22 @@
 - [x] common readtable rfc function
 - [ ] usercount status data
 - [ ] workprocess status
-- [ ] background job status
+- [ ] background job status **_V_OP_**
 - [ ] dump status
 - [ ] instance status
 - [ ] transport status
 - [ ] rfc resource status
+- [ ] CoreDNS or **_Consul_**?
 
 ### 3. build es and kibana
 ### 4. grafana dashboard
 - [ ] usercount list and user type dist
 - [ ] workprocess list and type
 - [ ] background job status
-- [ ] dump status
+- [ ] dump status SNAP
 - [ ] instance status
 - [ ] transport status
-- [ ] rfc resource statusbo
+- [ ] rfc resource status
 - [ ] os monitor
 - [ ] mysql monitor
 - [ ] es monitor
@@ -38,6 +39,9 @@
 ### 5. docker-compose deploy script
 - [ ] backend
 - [ ] agent
+- [ ] InfluxDB? openTSDB? **_prometheus_**?
+- [ ] consul and consul webui
+- [ ] 
 
 ### 6. unitest and ci
 
@@ -48,4 +52,6 @@
 
 ```
 maybe some code here
+
+./consul agent -bind 127.0.0.1 -data-dir=consuldata -ui -bootstrap -server -datacenter=dc1
 ```

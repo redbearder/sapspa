@@ -6,6 +6,9 @@ from typing import List, Dict
 import os
 import re
 import json
+from prometheus_client import start_http_server, Summary, Counter, Gauge, Histogram, Info, Enum
+import random
+import time
 import requests
 import schedule
 from configobj import ConfigObj
@@ -156,11 +159,58 @@ class R3rfcconn(object):
         kwparam['MAX_ELEMS'] = 0
         return self.get_rfc_data('TH_WPINFO', **kwparam)
 
+    def get_user_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_workprocess_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_bkjob_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_dump_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_rfcresource_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_transport_list(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
+    def get_instance_status(self, servername):
+        kwparam = {}
+        return self.get_rfc_data('', **kwparam)
+
     def close(self):
         self.conn.close()
 
 
 if __name__ == '__main__':
     __version__ = 1
-
     print('start Monitor agent ok')
+
+    c = Counter('my_failures', 'Description of counter')
+    c.inc()  # Increment by 1
+    c.inc(1.6)  # Increment by given value
+
+    g = Gauge('my_inprogress_requests', 'Description of gauge')
+    g.inc()  # Increment by 1
+    g.dec(10)  # Decrement by given value
+    g.set(4.2)  # Set to a given value
+
+    s = Summary('request_latency_seconds', 'Description of summary')
+    s.observe(4.7)  # Observe 4.7 (seconds in this case)
+
+    h = Histogram('request_latency_seconds', 'Description of histogram')
+    h.observe(4.7)  # Observe 4.7 (seconds in this case)
+
+    i = Info('my_build_version', 'Description of info')
+    i.info({'version': '1.2.3', 'buildhost': 'foo@bar'})
+
+    start_http_server(32768)
