@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_jwt_extended import (JWTManager, jwt_required, create_access_token,
+                                get_jwt_identity)
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
@@ -17,6 +19,7 @@ from config import Config
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
+jwt = JWTManager()
 # login.login_view = 'auth.login'
 # login.login_message = _l('Please log in to access this page.')
 mail = Mail()
@@ -28,6 +31,7 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
     # login.init_app(app)
     # mail.init_app(app)
     # app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \

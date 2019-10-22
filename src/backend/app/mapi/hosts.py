@@ -1,5 +1,6 @@
 from flask import abort, g, jsonify, request, url_for
 from flask_restful import Api, Resource
+from flask_jwt_extended import jwt_required
 
 from app import db
 from app.utils import bad_request, normal_request, query_request
@@ -10,6 +11,7 @@ hosts_schema = HostSchema(many=True)
 
 
 class Hosts(Resource):
+    @jwt_required
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
@@ -19,6 +21,7 @@ class Hosts(Resource):
         hosts_result = hosts_schema.dump(data.items)
         return query_request(hosts_result)
 
+    @jwt_required
     def post(self):
         # 新增数据
         data = request.get_json()
@@ -30,12 +33,14 @@ class Hosts(Resource):
 
 
 class Host(Resource):
+    @jwt_required
     def get(self, hostid):
         # 返回所有数据
         app = HostModel.query.get(hostid)
         app_result = host_schema.dump(app)
         return query_request(app_result)
 
+    @jwt_required
     def put(self, hostid):
         # 新增数据
         data = request.get_json()
