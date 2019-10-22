@@ -138,6 +138,12 @@ class R3rfcconn(object):
                                sysnr=r3sysnr,
                                client=r3client)
 
+    def get_connection_attributes(self):
+        return self.conn.get_connection_attributes()
+
+    def get_function_description(self, func_name):
+        return self.conn.get_function_description(func_name)
+
     def get_table_data(self, tablename: str, offset: int = 0, limit: int = 0):
         read_table_fm = 'RFC_READ_TABLE'
         kwparam = {}
