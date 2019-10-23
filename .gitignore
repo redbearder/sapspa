@@ -36,3 +36,5 @@ build/
 *.xlsx
 sapmonitoragent/
 lib/
+
+*.log
