@@ -135,39 +135,68 @@ export const asyncRoutes = [
   // },
   {
     path: '/apps',
-    component: () => import('@/views/sap/app'),
+    component: Layout,
     name: 'apps',
     meta: {
       title: 'Application',
       icon: 'table'
-    }
+    },
+    children: [
+      {
+        path: '/apps',
+        component: () => import('@/views/sap/app'),
+        name: 'Application',
+        meta: { title: 'Application', icon: 'table' }
+      }
+    ]
   },
   {
     path: '/hosts',
-    component: () => import('@/views/sap/host'),
+    component: Layout,
     name: 'hosts',
-    meta: {
-      title: 'Host',
-      icon: 'table'
-    }
+    children: [
+      {
+        path: '/hosts',
+        component: () => import('@/views/sap/host'),
+        name: 'hosts',
+        meta: {
+          title: 'Host',
+          icon: 'table'
+        }
+      }
+    ]
   },
   {
     path: '/subapps',
-    component: () => import('@/views/sap/subapp'),
+    component: Layout,
     name: 'subapps',
-    meta: {
-      title: 'Subapp',
-      icon: 'table'
-    }
+    children: [
+      {
+        path: '/subapps',
+        component: () => import('@/views/sap/subapp'),
+        name: 'subapps',
+        meta: {
+          title: 'Subapp',
+          icon: 'table'
+        }
+      }
+    ]
   },
   {
     path: '/instances',
-    component: () => import('@/views/sap/instance'),
+    component: Layout,
     name: 'instances',
-    meta: {
-      title: 'Instance',
-      icon: 'table'
-    }
+    children: [
+      {
+        path: '/instances',
+        component: () => import('@/views/sap/instance'),
+        name: 'instances',
+        meta: {
+          title: 'Instance',
+          icon: 'table'
+        }
+      }
+    ]
   },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }

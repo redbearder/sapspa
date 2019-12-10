@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">{{ $t('table.search') }}</el-button>
+      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">Search</el-button>
     </div>
 
     <el-table
@@ -39,7 +39,7 @@
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('table.actions')" align="center" width="200" class-name="small-padding fixed-width">
+      <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <router-link :to="'/apps/'+scope.row.appid+'/subapps'" class="link-type">
             <el-button type="primary" size="mini">
