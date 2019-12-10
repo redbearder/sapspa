@@ -1,8 +1,8 @@
 {
   "name": "sapspa_admin",
   "version": "0.1.0",
-  "description": "youliquan_admin, base on vue-element-admin@4.2.1",
-  "author": "Sylar <yuanzeng@gmail.com>",
+  "description": "sapspa_admin, base on vue-element-admin@4.2.1",
+  "author": "redbearder <redbearder@gmail.com>",
   "license": "MIT",
   "scripts": {
     "dev": "vue-cli-service serve",
