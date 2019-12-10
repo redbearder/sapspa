@@ -57,5 +57,5 @@ class SubAppsInApp(Resource):
             SubappModel.createdAt.desc()).paginate(page, pagesize)
         datacount = SubappModel.query.filter_by(appid=appid).order_by(
             SubappModel.createdAt.desc()).count()
-        subapps_result = subapps_schema.dump(subapps)
+        subapps_result = subapps_schema.dump(subapps.items)
         return query_request({'rows': subapps_result, 'count': datacount})

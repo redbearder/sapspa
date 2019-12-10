@@ -58,7 +58,7 @@ class InstancesInSubApp(Resource):
         instancescount = InstanceModel.query.filter_by(
             subappid=subappid).order_by(
                 InstanceModel.createdAt.desc()).count()
-        instances_result = instances_schema.dump(instances)
+        instances_result = instances_schema.dump(instances.items)
         return query_request({
             'rows': instances_result,
             'count': instancescount
@@ -75,7 +75,7 @@ class InstancesInHost(Resource):
             InstanceModel.createdAt.desc()).paginate(page, pagesize)
         instancescount = InstanceModel.query.filter_by(hostid=hostid).order_by(
             InstanceModel.createdAt.desc()).count()
-        instances_result = instances_schema.dump(instances)
+        instances_result = instances_schema.dump(instances.items)
         return query_request({
             'rows': instances_result,
             'count': instancescount
