@@ -44,3 +44,15 @@ class SubApp(Resource):
         app = SubappModel.query.filter_by(subappid=subappid).update(data)
         db.session.commit()
         return normal_request("update subapp success")
+
+
+class SubAppsInApp(Resource):
+    @jwt_required
+    def get(self, appid):
+        # 返回所有数据
+        page = request.args.get("page", 1, type=int)
+        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        subapps = SubappModel.query.filter_by(appid=appid).order_by(
+            SubappModel.createdAt.desc()).paginate(page, pagesize)
+        subapps_result = subapps_schema.dump(subapps)
+        return query_request(subapps_result)

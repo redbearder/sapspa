@@ -58,8 +58,8 @@ class Token(Resource):
     def delete(self):
         # 新增数据
         data = request.get_json()
-        appschema = user_schema.load(data)
-        app = UserSchema(**appschema)
+        userschema = user_schema.load(data)
+        app = UserSchema(**userschema)
         db.session.add(app)
         db.session.commit()
         return normal_request("create app success")

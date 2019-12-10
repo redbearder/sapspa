@@ -10,6 +10,7 @@
 - [ ] backend host list
 - [ ] backend instance list and relation redirect
 - [ ] admin and backend basic auth
+- [x] 22330 port support /api /mapi /admin
 
 ### 2. agent future
 - [x] common readtable rfc function

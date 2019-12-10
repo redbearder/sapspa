@@ -45,3 +45,27 @@ class Instace(Resource):
         app = InstanceModel.query.filter_by(instid=instid).update(data)
         db.session.commit()
         return normal_request("update instance success")
+
+
+class InstancesInSubApp(Resource):
+    @jwt_required
+    def get(self, subappid):
+        # 返回所有数据
+        page = request.args.get("page", 1, type=int)
+        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        instances = InstanceModel.query.filter_by(subappid=subappid).order_by(
+            InstanceModel.createdAt.desc()).paginate(page, pagesize)
+        instances_result = instances_schema.dump(instances)
+        return query_request(instances_result)
+
+
+class InstancesInHost(Resource):
+    @jwt_required
+    def get(self, hostid):
+        # 返回所有数据
+        page = request.args.get("page", 1, type=int)
+        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        instances = InstanceModel.query.filter_by(hostid=hostid).order_by(
+            InstanceModel.createdAt.desc()).paginate(page, pagesize)
+        instances_result = instances_schema.dump(instances)
+        return query_request(instances_result)
