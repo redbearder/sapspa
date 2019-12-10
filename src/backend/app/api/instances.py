@@ -13,7 +13,7 @@ class Instances(Resource):
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
-        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = InstanceModel.query.paginate(page, pagesize)
         # data = App.query.all()
         instances_result = instances_schema.dump(data.items)

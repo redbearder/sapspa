@@ -15,7 +15,7 @@ class SubApps(Resource):
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
-        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = SubappModel.query.paginate(page, pagesize)
         subapps_result = subapps_schema.dump(data.items)
         return query_request(subapps_result)
@@ -51,7 +51,7 @@ class SubAppsInApp(Resource):
     def get(self, appid):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
-        pagesize = min(request.args.get("pagesize", 50, type=int), 100)
+        pagesize = min(request.args.get("limit", 50, type=int), 100)
         subapps = SubappModel.query.filter_by(appid=appid).order_by(
             SubappModel.createdAt.desc()).paginate(page, pagesize)
         subapps_result = subapps_schema.dump(subapps)

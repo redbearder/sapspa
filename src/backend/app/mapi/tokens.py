@@ -51,7 +51,11 @@ class Tokens(Resource):
 
         # Identity can be any data that is json serializable
         access_token = create_access_token(identity=username)
-        return query_request(access_token, "create app success")
+        return query_request(
+            {
+                'token': access_token,
+                'user': user_schema.dump(user)
+            }, "create token success")
 
 
 class Token(Resource):
