@@ -17,9 +17,9 @@ class Apps(Resource):
         page = request.args.get("page", 1, type=int)
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = AppModel.query.paginate(page, pagesize)
-        # data = App.query.all()
+        datacount = AppModel.query.count()
         apps_result = apps_schema.dump(data.items)
-        return query_request(apps_result)
+        return query_request({'rows': apps_result, 'count': datacount})
 
     @jwt_required
     def post(self):

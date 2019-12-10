@@ -18,9 +18,9 @@ class Hosts(Resource):
         page = request.args.get("page", 1, type=int)
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = HostModel.query.paginate(page, pagesize)
-        # data = App.query.all()
+        datacount = HostModel.query.count()
         hosts_result = hosts_schema.dump(data.items)
-        return query_request(hosts_result)
+        return query_request({'rows': hosts_result, 'count': datacount})
 
     @jwt_required
     def post(self):

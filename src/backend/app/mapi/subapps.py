@@ -17,8 +17,9 @@ class SubApps(Resource):
         page = request.args.get("page", 1, type=int)
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = SubappModel.query.paginate(page, pagesize)
+        datacount = SubappModel.query.count()
         subapps_result = subapps_schema.dump(data.items)
-        return query_request(subapps_result)
+        return query_request({'rows': subapps_result, 'count': datacount})
 
     @jwt_required
     def post(self):
@@ -54,5 +55,7 @@ class SubAppsInApp(Resource):
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         subapps = SubappModel.query.filter_by(appid=appid).order_by(
             SubappModel.createdAt.desc()).paginate(page, pagesize)
+        datacount = SubappModel.query.filter_by(appid=appid).order_by(
+            SubappModel.createdAt.desc()).count()
         subapps_result = subapps_schema.dump(subapps)
-        return query_request(subapps_result)
+        return query_request({'rows': subapps_result, 'count': datacount})

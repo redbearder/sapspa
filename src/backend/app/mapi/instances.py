@@ -16,9 +16,9 @@ class Instances(Resource):
         page = request.args.get("page", 1, type=int)
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         data = InstanceModel.query.paginate(page, pagesize)
-        # data = App.query.all()
+        datacount = InstanceModel.query.count()
         instances_result = instances_schema.dump(data.items)
-        return query_request(instances_result)
+        return query_request({'rows': instances_result, 'count': datacount})
 
     @jwt_required
     def post(self):
@@ -55,8 +55,14 @@ class InstancesInSubApp(Resource):
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         instances = InstanceModel.query.filter_by(subappid=subappid).order_by(
             InstanceModel.createdAt.desc()).paginate(page, pagesize)
+        instancescount = InstanceModel.query.filter_by(
+            subappid=subappid).order_by(
+                InstanceModel.createdAt.desc()).count()
         instances_result = instances_schema.dump(instances)
-        return query_request(instances_result)
+        return query_request({
+            'rows': instances_result,
+            'count': instancescount
+        })
 
 
 class InstancesInHost(Resource):
@@ -67,5 +73,10 @@ class InstancesInHost(Resource):
         pagesize = min(request.args.get("limit", 50, type=int), 100)
         instances = InstanceModel.query.filter_by(hostid=hostid).order_by(
             InstanceModel.createdAt.desc()).paginate(page, pagesize)
+        instancescount = InstanceModel.query.filter_by(hostid=hostid).order_by(
+            InstanceModel.createdAt.desc()).count()
         instances_result = instances_schema.dump(instances)
-        return query_request(instances_result)
+        return query_request({
+            'rows': instances_result,
+            'count': instancescount
+        })
