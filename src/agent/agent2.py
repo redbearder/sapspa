@@ -90,7 +90,7 @@ class Host(object):
 
 
 class Subapp(object):
-    sid: List(str) = []
+    sid: List[str] = []
 
     def __init__(self):
         dirlist = os.listdir('/sapmnt')
@@ -105,7 +105,7 @@ class Subapp(object):
 
 
 class Instance(object):
-    instance: List(Dict) = []
+    instance: List[Dict] = []
 
     def __init__(self, sid):
         profilepath = '/sapmnt/' + sid + '/profile'
