@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { fetchInstanceList } from '@/api/instance'
+import { fetchInstanceList, fetchInstanceListInHost, fetchInstanceListInSubApp } from '@/api/instance'
 import waves from '@/directive/waves' // Waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
@@ -107,12 +107,38 @@ export default {
     }
   },
   created() {
-    this.getList()
+    const hostid = this.$route.params.hostid
+    const subappid = this.$route.params.subappid
+    if (hostid) {
+      this.getListInHost(hostid)
+    } else if (subappid) {
+      this.getListInSubapp(subappid)
+    } else {
+      this.getList()
+    }
   },
   methods: {
     getList() {
       this.listLoading = true
       fetchInstanceList(this.listQuery).then(response => {
+        this.list = response.data.rows
+        this.total = response.data.count
+
+        this.listLoading = false
+      })
+    },
+    getListInHost(hostid) {
+      this.listLoading = true
+      fetchInstanceListInHost(hostid, this.listQuery).then(response => {
+        this.list = response.data.rows
+        this.total = response.data.count
+
+        this.listLoading = false
+      })
+    },
+    getListInSubapp(subappid) {
+      this.listLoading = true
+      fetchInstanceListInSubApp(subappid, this.listQuery).then(response => {
         this.list = response.data.rows
         this.total = response.data.count
 

@@ -147,6 +147,13 @@ export const asyncRoutes = [
         component: () => import('@/views/sap/app'),
         name: 'Application',
         meta: { title: 'Application', icon: 'table' }
+      },
+      {
+        path: ':appid/subapps',
+        component: () => import('@/views/sap/subapp'),
+        name: 'SubappsInApp',
+        hidden: true,
+        meta: { title: 'Application Subapps', icon: 'table' }
       }
     ]
   },
@@ -163,6 +170,13 @@ export const asyncRoutes = [
           title: 'Host',
           icon: 'table'
         }
+      },
+      {
+        path: ':hostid/instances',
+        component: () => import('@/views/sap/instance'),
+        name: 'InstancesInHost',
+        hidden: true,
+        meta: { title: 'Host Instances', icon: 'table' }
       }
     ]
   },
@@ -179,6 +193,13 @@ export const asyncRoutes = [
           title: 'Subapp',
           icon: 'table'
         }
+      },
+      {
+        path: ':subappid/instances',
+        component: () => import('@/views/sap/instance'),
+        name: 'InstancesInSubapp',
+        hidden: true,
+        meta: { title: 'Subapp Instances', icon: 'table' }
       }
     ]
   },

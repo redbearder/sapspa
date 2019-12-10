@@ -64,7 +64,7 @@
 </template>
 
 <script>
-import { fetchSubappList } from '@/api/subapp'
+import { fetchSubappList, fetchSubappListInApp } from '@/api/subapp'
 import waves from '@/directive/waves' // Waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
@@ -114,12 +114,26 @@ export default {
     }
   },
   created() {
-    this.getList()
+    const appid = this.$route.params.appid
+    if (appid) {
+      this.getSubappListInApp(appid)
+    } else {
+      this.getList()
+    }
   },
   methods: {
     getList() {
       this.listLoading = true
       fetchSubappList(this.listQuery).then(response => {
+        this.list = response.data.rows
+        this.total = response.data.count
+
+        this.listLoading = false
+      })
+    },
+    getSubappListInApp(appid) {
+      this.listLoading = true
+      fetchSubappListInApp(appid, this.listQuery).then(response => {
         this.list = response.data.rows
         this.total = response.data.count
 
