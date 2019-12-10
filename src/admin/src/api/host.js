@@ -1,46 +1,39 @@
 import request from '@/utils/request'
 
-export function fetchAppList(query) {
+export function fetchHostList(query) {
   return request({
-    url: '/apps',
+    url: '/hosts',
     method: 'get',
     params: query
   })
 }
 
-export function fetchApp(appid) {
+export function fetchHost(hostid) {
   return request({
-    url: `/apps/${appid}`,
+    url: `/hosts/${hostid}`,
     method: 'get'
   })
 }
 
-export function fetchSubappListInApp(appid) {
+export function createHost(data) {
   return request({
-    url: `/apps/${appid}/subapps`,
-    method: 'get'
-  })
-}
-
-export function createApp(data) {
-  return request({
-    url: '/apps',
+    url: '/hosts',
     method: 'post',
     data
   })
 }
 
-export function updateApp(appid, data) {
+export function updateHost(hostid, data) {
   return request({
-    url: `/apps/${appid}`,
+    url: `/hosts/${hostid}`,
     method: 'put',
     data
   })
 }
 
-export function deleteApp(appid) {
+export function deleteHost(hostid) {
   return request({
-    url: `/apps/${appid}`,
+    url: `/hosts/${hostid}`,
     method: 'delete'
   })
 }

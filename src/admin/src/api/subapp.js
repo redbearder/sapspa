@@ -37,3 +37,11 @@ export function deleteSubapp(subappid) {
     method: 'delete'
   })
 }
+
+export function fetchSubappListInApp(appid, query) {
+  return request({
+    url: `/apps/${appid}/subapps`,
+    method: 'get',
+    params: query
+  })
+}

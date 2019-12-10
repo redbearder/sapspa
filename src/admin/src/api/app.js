@@ -15,13 +15,6 @@ export function fetchApp(appid) {
   })
 }
 
-export function fetchSubappListInApp(appid) {
-  return request({
-    url: `/apps/${appid}/subapps`,
-    method: 'get'
-  })
-}
-
 export function createApp(data) {
   return request({
     url: '/apps',
