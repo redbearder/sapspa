@@ -46,9 +46,9 @@
               Subapps
             </el-button>
           </router-link>
-<!--          <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row,'deleted')">-->
-<!--            删除-->
-<!--          </el-button>-->
+          <!--          <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row,'deleted')">-->
+          <!--            删除-->
+          <!--          </el-button>-->
         </template>
       </el-table-column>
     </el-table>
@@ -115,8 +115,8 @@ export default {
     getList() {
       this.listLoading = true
       fetchAppList(this.listQuery).then(response => {
-        this.list = response.data
-        this.total = response.count
+        this.list = response.data.rows
+        this.total = response.data.count
 
         this.listLoading = false
       })

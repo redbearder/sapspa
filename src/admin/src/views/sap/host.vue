@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import { fetchAppList } from '@/api/app'
+import { fetchHostList } from '@/api/host'
 import waves from '@/directive/waves' // Waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
@@ -124,9 +124,9 @@ export default {
   methods: {
     getList() {
       this.listLoading = true
-      fetchAppList(this.listQuery).then(response => {
-        this.list = response.data
-        this.total = response.count
+      fetchHostList(this.listQuery).then(response => {
+        this.list = response.data.rows
+        this.total = response.data.count
 
         this.listLoading = false
       })
