@@ -47,6 +47,9 @@ const actions = {
   // get user info
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
+      commit('SET_ROLES', ['admin'])
+      resolve({ roles: ['admin'] })
+      /*
       getInfo(state.token).then(response => {
         const { data } = response
 
@@ -69,6 +72,7 @@ const actions = {
       }).catch(error => {
         reject(error)
       })
+      */
     })
   },
 
