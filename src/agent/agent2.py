@@ -6,7 +6,10 @@ from typing import List, Dict
 import os
 import re
 import json
-from prometheus_client import start_http_server, Summary, Counter, Gauge, Histogram, Info, Enum
+from prometheus_client import start_http_server, Summary, Counter, Gauge, Histogram, Info, Enum, start_wsgi_server
+from prometheus_client import make_wsgi_app
+from wsgiref.simple_server import make_server
+
 import random
 import time
 import requests
@@ -213,10 +216,13 @@ if __name__ == '__main__':
     s = Summary('request_latency_seconds', 'Description of summary')
     s.observe(4.7)  # Observe 4.7 (seconds in this case)
 
-    h = Histogram('request_latency_seconds', 'Description of histogram')
+    h = Histogram('request_latency_seconds_histogram',
+                  'Description of histogram')
     h.observe(4.7)  # Observe 4.7 (seconds in this case)
 
     i = Info('my_build_version', 'Description of info')
     i.info({'version': '1.2.3', 'buildhost': 'foo@bar'})
 
-    start_http_server(32768)
+    app = make_wsgi_app()
+    httpd = make_server('', 22331, app)
+    httpd.serve_forever()
