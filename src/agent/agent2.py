@@ -8,8 +8,10 @@ import re
 import json
 from prometheus_client import start_http_server, Summary, Counter, Gauge, Histogram, Info, Enum, start_wsgi_server
 from prometheus_client import make_wsgi_app
-from wsgiref.simple_server import make_server
-
+from prometheus_client.core import REGISTRY, CounterMetricFamily, GaugeHistogramMetricFamily, GaugeMetricFamily, HistogramMetricFamily, InfoMetricFamily, SummaryMetricFamily, StateSetMetricFamily
+from flask import Flask
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from datetime import date, time, timedelta
 import random
 import time
 import requests
@@ -19,6 +21,7 @@ from optparse import OptionParser
 from pyrfc import Connection
 import decimal
 from decimal import Decimal
+import consul
 
 instmonfrequency = 30  # seconds
 
@@ -58,12 +61,6 @@ class JsonCustomEncoder(json.JSONEncoder):
 
 
 class Host(object):
-    cpu = None
-    mem = None
-    swap = None
-    hostname = None
-    ipaddress: List[Dict] = []
-
     singleton = None
 
     def __new__(cls, *args, **kwargs):
@@ -72,6 +69,11 @@ class Host(object):
         return cls.singleton
 
     def __init__(self):
+        self.cpu = None
+        self.mem = None
+        self.swap = None
+        self.hostname = None
+        self.ipaddress: List[Dict] = []
         self.cpu = psutil.cpu_count()
         self.mem = psutil.virtual_memory().total
         self.swap = psutil.swap_memory().total
@@ -92,48 +94,52 @@ class Host(object):
     pass
 
 
-class Subapp(object):
-    sid: List[str] = []
-
-    def __init__(self):
-        dirlist = os.listdir('/sapmnt')
-        for dir in dirlist:
-            if len(dir) == 3:
-                self.sid.append(dir)
-        pass
-
-    @property
-    def sidList(self):
-        return self.sid
+def get_sid_list():
+    sidlist: List[str] = []
+    dirlist = os.listdir('/sapmnt')
+    for dir in dirlist:
+        if len(dir) == 3:
+            sidlist.append(dir)
+    return sidlist
 
 
-class Instance(object):
+def get_instance_list_by_sid(sid):
     instance: List[Dict] = []
+    diaServernameList: List[Dict] = []
+    profilepath = '/sapmnt/' + sid + '/profile'
+    list1 = os.listdir(profilepath)
+    for l in list1:
+        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+            p = {}
+            p['profile'] = l
+            if 'ASCS' not in l:
+                p['type'] = 'DIALOG'
+            else:
+                # ASCS
+                p['type'] = 'ASCS'
+            instance.append(p)
+    return instance
 
-    def __init__(self, sid):
-        profilepath = '/sapmnt/' + sid + '/profile'
-        list1 = os.listdir(profilepath)
-        for l in list1:
-            if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
-                p = {}
-                p['profile'] = l
-                if 'ASCS' not in l:
-                    p['type'] = 'DIALOG'
-                    pass
-                else:
-                    # ASCS
-                    p['type'] = 'ASCS'
-                    pass
-                self.instance.append(p)
 
-    @property
-    def instanceList(self):
-        return self.instance
+def get_instance_servername_list_by_sid(sid):
+    diaServernameList: List[Dict] = []
+    profilepath = '/sapmnt/' + sid + '/profile'
+    list1 = os.listdir(profilepath)
+    for l in list1:
+        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+            p = {}
+            p['profile'] = l
+            if 'ASCS' not in l:
+                p['type'] = 'DIALOG'
+                arr = l.split('_')
+                i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
+                p['servername'] = i
+                diaServernameList.append(i)
+                pass
+    return diaServernameList
 
 
 class R3rfcconn(object):
-    conn = None
-
     def __init__(self, r3user, r3pwd, r3ashost, r3sysnr, r3client):
         self.conn = Connection(user=r3user,
                                passwd=r3pwd,
@@ -158,39 +164,63 @@ class R3rfcconn(object):
 
     def get_rfc_data(self, fm: str, **kwparam: dict):
         result = self.conn.call(fm, **kwparam)
-        return json.dumps(result, cls=JsonCustomEncoder)
+        # return json.dumps(result, cls=JsonCustomEncoder)
+        return result
 
-    def get_server_wpinfo(self, servername):
+    def get_server_wp_list(self, servername):
+        '''
+        get workprocess list and info by servername
+        :param servername: s4ides1_DM0_00
+        :return: 
+        '''
         kwparam = {}
         kwparam['SRVNAME'] = servername
-        kwparam['WITH_CPU'] = '00'
+        kwparam['WITH_CPU'] = b'00'
         kwparam['WITH_MTX_INFO'] = 0
         kwparam['MAX_ELEMS'] = 0
-        return self.get_rfc_data('TH_WPINFO', **kwparam)
+        return self.get_rfc_data('TH_WPINFO', **kwparam)['WPLIST']
 
-    def get_user_list(self, servername):
+    def get_user_list(self):
+        '''
+        get SID overall wp info
+        :return: 
+        '''
         kwparam = {}
-        return self.get_rfc_data('', **kwparam)
-
-    def get_workprocess_list(self, servername):
-        kwparam = {}
-        return self.get_rfc_data('', **kwparam)
+        return self.get_rfc_data('TH_USER_LIST', **kwparam)['USRLIST']
 
     def get_bkjob_list(self, servername):
+        '''
+        need confirm
+        :param servername: 
+        :return: 
+        '''
         kwparam = {}
-        return self.get_rfc_data('', **kwparam)
+        return self.get_rfc_data('BDL_READ_JOB_STATUS', **kwparam)
 
-    def get_dump_list(self, servername):
+    def get_dump_list(self):
+        # date.today() - timedelta(1), DATE_TO = date.today(), TIME_FROM = '000000', TIME_TO = '235959')
         kwparam = {}
-        return self.get_rfc_data('', **kwparam)
+        kwparam['DATE_FROM'] = date.today()
+        kwparam['TIME_FROM'] = b'000000'
+        kwparam['DATE_TO'] = date.today()
+        kwparam['TIME_TO'] = b'235959'
+        try:
+            return self.get_rfc_data('/SDF/GET_DUMP_LOG',
+                                     **kwparam)['ET_E2E_LOG']
+        except:
+            return []
 
     def get_rfcresource_list(self, servername):
+        '''
+        need confirm
+        :param servername: 
+        :return: 
+        '''
         kwparam = {}
-        return self.get_rfc_data('', **kwparam)
+        return self.get_rfc_data('RFC_SERVER_GROUP_RESOURCES', **kwparam)
 
-    def get_transport_list(self, servername):
-        kwparam = {}
-        return self.get_rfc_data('', **kwparam)
+    def get_transport_list(self, tablename):
+        return self.get_table_data(tablename)
 
     def get_instance_status(self, servername):
         kwparam = {}
@@ -200,29 +230,191 @@ class R3rfcconn(object):
         self.conn.close()
 
 
-if __name__ == '__main__':
-    __version__ = 1
-    print('start Monitor agent ok')
+# Create my app
+app = Flask(__name__)
+app.config['DEBUG'] = True
 
-    c = Counter('my_failures', 'Description of counter')
-    c.inc()  # Increment by 1
-    c.inc(1.6)  # Increment by given value
 
-    g = Gauge('my_inprogress_requests', 'Description of gauge')
-    g.inc()  # Increment by 1
-    g.dec(10)  # Decrement by given value
-    g.set(4.2)  # Set to a given value
+@app.route('/')
+def index():
+    return 'This is a wrong Index Page'
 
-    s = Summary('request_latency_seconds', 'Description of summary')
-    s.observe(4.7)  # Observe 4.7 (seconds in this case)
 
-    h = Histogram('request_latency_seconds_histogram',
-                  'Description of histogram')
-    h.observe(4.7)  # Observe 4.7 (seconds in this case)
+@app.route('/api/hosts')
+def hosts():
+    return 'current hosts info'
 
-    i = Info('my_build_version', 'Description of info')
-    i.info({'version': '1.2.3', 'buildhost': 'foo@bar'})
 
-    app = make_wsgi_app()
-    httpd = make_server('', 22331, app)
-    httpd.serve_forever()
+@app.route('/api/apps')
+def subapps_info():
+    '''
+    here app means subapp
+    :return: all subapp infomation includes instances info
+    '''
+    return 'current apps, subapps, instances, profiles info'
+
+
+@app.route('/api/apps/<string:sid>')
+def subapp_info(sid):
+    '''
+    all subapp infomation includes instances info
+    :param sid: SAP SID 
+    :return: sid subapp infomation includes instances info
+    '''
+    return 'current subapp_info info'
+
+
+@app.route('/api/apps/<string:sid>/instances')
+def subapp_instances(sid):
+    return 'current subapp_instances info'
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>')
+def subapp_instance_info(sid, instanceid):
+    return 'current subapp_instances info'
+
+
+class SAPCollector(object):
+    def __init__(self):
+        pass
+
+    def collect(self):
+        # get SID list from os dir
+        sidList = get_sid_list()
+        for sid in sidList:
+            c = consul.Consul()
+            kvid, kvv = c.kv.get(sid + '_login')
+            if kvv:
+                # get SID login info from consul
+                kvvDict = json.loads(kvv['Value'])
+                conn = R3rfcconn(r3ashost='127.0.0.1',
+                                 r3sysnr=kvvDict['r3sysnr'],
+                                 r3client=kvvDict['r3client'],
+                                 r3user=kvvDict['r3user'],
+                                 r3pwd=kvvDict['r3pwd'])
+
+                for servername in get_instance_servername_list_by_sid(sid):
+                    # master identification
+                    kvid_master, kvv_master = c.kv.get(sid + '_master')
+                    if kvv_master:
+                        kvvDict_master = json.loads(kvv_master['Value'])
+                        if servername == kvvDict_master['servername']:
+                            # during user count, by user type
+                            USRLIST = conn.get_user_list()
+                            g_usercount = GaugeMetricFamily(
+                                "UserCount",
+                                'System Overall User Count',
+                                labels=['SID'])
+                            g_usercount.add_metric([sid], len(USRLIST))
+                            yield g_usercount
+
+                            # during dump count
+                            DUMPLIST = conn.get_dump_list()
+                            g_dumpcount = GaugeMetricFamily(
+                                "DumpCount",
+                                'System Overall Dump Count',
+                                labels=['SID'])
+                            g_dumpcount.add_metric([sid], len(DUMPLIST))
+                            yield g_dumpcount
+                    else:
+                        c.kv.put(sid + '_master',
+                                 json.dumps({"servername": servername}))
+                        # during user count, by user type
+                        USRLIST = conn.get_user_list()
+                        g_usercount = GaugeMetricFamily(
+                            "UserCount",
+                            'System Overall User Count',
+                            labels=['SID'])
+                        g_usercount.add_metric([sid], len(USRLIST))
+                        yield g_usercount
+
+                        # during dump count
+                        DUMPLIST = conn.get_dump_list()
+                        g_dumpcount = GaugeMetricFamily(
+                            "DumpCount",
+                            'System Overall Dump Count',
+                            labels=['SID'])
+                        g_dumpcount.add_metric([sid], len(DUMPLIST))
+                        yield g_dumpcount
+                        pass
+                    # during workprocess count, by wp type
+                    wplist = conn.get_server_wp_list(servername)
+                    running_dia_count = 0
+                    running_upd_count = 0
+                    running_btc_count = 0
+                    for wp in wplist:
+                        if wp['WP_ISTATUS'] != 2:
+                            if wp['WP_TYP'] == 'DIA':
+                                running_dia_count += 1
+                                pass
+                            if wp['WP_TYP'] == 'BTC':
+                                running_btc_count += 1
+                                pass
+                            if wp['WP_TYP'] == 'UPD':
+                                running_upd_count += 1
+                                pass
+                    g_wpcount = GaugeMetricFamily(
+                        "WorkprocessCount",
+                        'WorkprocessCount of One Instance in SID group by Type',
+                        labels=['SID', 'Instance', 'WorkprocessType'])
+                    g_wpcount.add_metric([sid, servername, 'DIA'],
+                                         running_dia_count)
+                    g_wpcount.add_metric([sid, servername, 'BTC'],
+                                         running_btc_count)
+                    g_wpcount.add_metric([sid, servername, 'UPD'],
+                                         running_upd_count)
+                    yield g_wpcount
+
+                conn.close()
+        '''
+        
+        
+        during job count, by job type
+        
+        instance status
+        during rfc resource, total and remain
+        during transport list, total
+        '''
+        # c = CounterMetricFamily("HttpRequests", 'Help text', labels=['app'])
+        # c.add_metric(["example"], random.randint(10, 100))
+        # yield c
+
+        # bucket1_value = random.randint(0, 10)
+        # bucket2_value = random.randint(11, 100)
+        # h = HistogramMetricFamily("HistogramMetricFamily",
+        #                           'HistogramMetricFamily text',
+        #                           labels=['HistogramMetricFamily app'])
+        # # h.add_metric(["labels1", "labels2"], [["1", 1], ["2", 1]], 2)
+        # h.add_metric(["labels1"], [["1", 1], ["2", 1]], 2)
+        # yield h
+
+        # i = InfoMetricFamily("InfoMetricFamily",
+        #                      'InfoMetricFamily text',
+        #                      labels=['InfoMetricFamily'])
+        # i.add_metric(["InfoMetricFamily example"],
+        #              {"InfoMetricFamily example": '123'})
+        # yield i
+
+
+c = consul.Consul()
+hostname = socket.gethostname()
+ip = socket.gethostbyname(hostname)
+c.agent.service.register(name=hostname + '_agent',
+                         address=ip,
+                         port=22331,
+                         tags=['sapspa_agent', 'sapspa'],
+                         enable_tag_override=True)
+
+c.agent.service.register(name=hostname + '_host',
+                         address=ip,
+                         port=22332,
+                         tags=['host', 'sapspa'],
+                         enable_tag_override=True)
+
+REGISTRY.register(SAPCollector())
+# Add prometheus wsgi middleware to route /metrics requests
+app_dispatch = DispatcherMiddleware(app, {'/metrics': make_wsgi_app()})
+
+# # Install uwsgi if you do not have it
+# pip install uwsgi
+# uwsgi --http 0.0.0;0:22331 --wsgi-file agent2.py --callable app_dispatch
