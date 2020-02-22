@@ -4,7 +4,6 @@
 
 ## task list
 ### 1. backend future
-
 - [ ] backend app list
 - [ ] backend subapp list
 - [ ] backend host list
@@ -14,16 +13,17 @@
 
 ### 2. agent future
 - [x] common readtable rfc function
-- [ ] usercount status data
-- [ ] workprocess status
+- [x] usercount status data
+- [x] workprocess status
 - [ ] background job status **_V_OP_**
-- [ ] dump status
+- [x] dump status
 - [ ] instance status
 - [ ] transport status
 - [ ] rfc resource status
-- [ ] CoreDNS or **_Consul_**?
+- [x] Consul
 
 ### 3. build es and kibana
+- [x] filebeat and live reload
 ### 4. grafana dashboard
 - [ ] usercount list and user type dist
 - [ ] workprocess list and type
@@ -32,7 +32,7 @@
 - [ ] instance status
 - [ ] transport status
 - [ ] rfc resource status
-- [ ] os monitor
+- [x] os monitor
 - [ ] mysql monitor
 - [ ] es monitor
 - [ ] mysql monitor

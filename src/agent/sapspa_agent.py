@@ -22,6 +22,7 @@ from pyrfc import Connection
 import decimal
 from decimal import Decimal
 import consul
+import yaml
 
 instmonfrequency = 30  # seconds
 
@@ -411,10 +412,37 @@ c.agent.service.register(name=hostname + '_host',
                          tags=['host', 'sapspa'],
                          enable_tag_override=True)
 
+# update filebeat config yaml
+if not os.path.exists('/etc/filebeat'):
+    os.mkdir('/etc/filebeat')
+if not os.path.exists('/etc/filebeat/inputs.d'):
+    os.mkdir('/etc/filebeat/inputs.d')
+
+input_path_list = []
+sidList = get_sid_list()
+for sid in sidList:
+    profilepath = '/sapmnt/' + sid + '/profile'
+    list1 = os.listdir(profilepath)
+    for l in list1:
+        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+            arr = l.split('_')
+            instanceid = arr[1]
+            input_path_list.append(f'/usr/sap/{sid}/{instanceid}/work/*')
+
+with open('/etc/filebeat/inputs.d/sapspa.yml', 'w') as f:
+    filebeat_input_list: List[Dict] = []
+    filebeat_input_list.append({
+        'type': 'log',
+        'paths': input_path_list,
+        'scan_frequency': '10s'
+    })
+    f.write(yaml.dump(filebeat_input_list))
+    pass
+
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests
 app_dispatch = DispatcherMiddleware(app, {'/metrics': make_wsgi_app()})
 
 # # Install uwsgi if you do not have it
 # pip install uwsgi
-# uwsgi --http 0.0.0;0:22331 --wsgi-file agent2.py --callable app_dispatch
+# uwsgi --http 0.0.0;0:22331 --wsgi-file sapspa_agent.py --callable app_dispatch
