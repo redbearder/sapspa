@@ -24,6 +24,7 @@
 
 ### 3. build es and kibana
 - [x] filebeat and live reload
+
 ### 4. grafana dashboard
 - [ ] usercount list and user type dist
 - [ ] workprocess list and type
@@ -44,9 +45,13 @@
 - [ ] consul and consul webui
 - [ ] 
 
-### 6. unitest and ci
+### 6. bash deploy script
+- [ ] todo...
 
-### 7. hana database monitor and report
+### 7. unitest and ci
+- [ ] todo...
+
+### 8. hana database monitor and report
 - [ ] todo...
 
 
