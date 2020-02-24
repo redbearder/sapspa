@@ -23,6 +23,7 @@ import decimal
 from decimal import Decimal
 import consul
 import yaml
+import shlex, subprocess
 
 instmonfrequency = 30  # seconds
 
@@ -106,13 +107,18 @@ def get_sid_list():
 
 def get_instance_list_by_sid(sid):
     instance: List[Dict] = []
-    diaServernameList: List[Dict] = []
     profilepath = '/sapmnt/' + sid + '/profile'
     list1 = os.listdir(profilepath)
     for l in list1:
         if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
             p = {}
             p['profile'] = l
+            arr = l.split('_')
+            p['sysnr'] = arr[1][-2:]
+            p['host'] = arr[2]
+            p['sid'] = arr[0]
+            i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
+            p['servername'] = i
             if 'ASCS' not in l:
                 p['type'] = 'DIALOG'
             else:
@@ -294,6 +300,32 @@ class SAPCollector(object):
                                  r3user=kvvDict['r3user'],
                                  r3pwd=kvvDict['r3pwd'])
 
+                for instance in get_instance_list_by_sid(sid):
+                    instance_check_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {instance["sysnr"]} -function GetProcessList"'
+                    instance_check_cmd_args = shlex.split(instance_check_cmd)
+                    sp = subprocess.run(instance_check_cmd_args,
+                                        capture_output=True)
+                    output = sp.stdout.decode('utf-8')
+                    outputlines = output.splitlines()
+                    if 'Red' in output:
+                        g_instancestatus = StateSetMetricFamily(
+                            "InstanceStatus",
+                            'Instance Status Check in SID',
+                            labels=['SID', 'Instance'])
+                        g_instancestatus.add_metric([sid, instance["profile"]],
+                                                    {'status': False})
+                        yield g_instancestatus
+                    else:
+                        g_instancestatus = StateSetMetricFamily(
+                            "InstanceStatus",
+                            'Instance Status Check in SID',
+                            labels=['SID', 'Instance'])
+                        g_instancestatus.add_metric([sid, instance["profile"]],
+                                                    {'status': True})
+                        yield g_instancestatus
+                        pass
+                    pass
+
                 for servername in get_instance_servername_list_by_sid(sid):
                     # master identification
                     kvid_master, kvv_master = c.kv.get(sid + '_master')
@@ -368,11 +400,7 @@ class SAPCollector(object):
 
                 conn.close()
         '''
-        
-        
         during job count, by job type
-        
-        instance status
         during rfc resource, total and remain
         during transport list, total
         '''
@@ -402,13 +430,13 @@ hostname = socket.gethostname()
 ip = socket.gethostbyname(hostname)
 c.agent.service.register(name=hostname + '_agent',
                          address=ip,
-                         port=22331,
+                         port=23310,
                          tags=['sapspa_agent', 'sapspa'],
                          enable_tag_override=True)
 
 c.agent.service.register(name=hostname + '_host',
                          address=ip,
-                         port=22332,
+                         port=23311,
                          tags=['host', 'sapspa'],
                          enable_tag_override=True)
 
@@ -445,4 +473,4 @@ app_dispatch = DispatcherMiddleware(app, {'/metrics': make_wsgi_app()})
 
 # # Install uwsgi if you do not have it
 # pip install uwsgi
-# uwsgi --http 0.0.0;0:22331 --wsgi-file sapspa_agent.py --callable app_dispatch
+# uwsgi --http 0.0.0.0:23310 --wsgi-file sapspa_agent.py --callable app_dispatch
