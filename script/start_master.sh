@@ -116,6 +116,7 @@ nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0
 # start admin
 
 # create user search
+useradd -d /home/search -m search
 # download ELK elasticsearch
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
 tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz ${BASE_DIR}script/download/
@@ -143,6 +144,7 @@ cp ${BASE_DIR}etc/grafana/default.ini ${BASE_DIR}app/grafana/conf/default.ini
 # install supervisord
 pip install supervisor
 cp -Rf ${BASE_DIR}etc/supervisord /etc/
+mkdir /var/run/supervisor
 # start supervisord
 supervisorctl -c /etc/supervisord/supervisord.conf
 supervisorctl reload
