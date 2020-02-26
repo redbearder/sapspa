@@ -19,14 +19,14 @@
           <span>{{ scope.row.instid }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'instanceid'" class-name="status-col">
+      <el-table-column :label="'instanceid'" class-name="status-col" width="200">
         <template slot-scope="scope">
           <span>{{ scope.row.instanceid }}</span>
         </template>
       </el-table-column>
       <el-table-column :label="'subappid'" prop="subappid" align="center">
         <template slot-scope="scope">
-          <span>{{ scope.row.subappid }}</span>
+          <span>{{ scope.row.subapp.subappsid }}</span>
         </template>
       </el-table-column>
       <el-table-column :label="'instanceno'" class-name="status-col" width="100">
@@ -34,17 +34,17 @@
           <span>{{ scope.row.instanceno }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'instancetype'" class-name="status-col" width="100">
+      <el-table-column :label="'instancetype'" class-name="status-col" width="200">
         <template slot-scope="scope">
           <span>{{ scope.row.instancetype }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'hostid'" class-name="status-col" width="100">
+      <el-table-column :label="'hostid'" class-name="status-col" width="150">
         <template slot-scope="scope">
-          <span>{{ scope.row.hostid }}</span>
+          <span>{{ scope.row.host.hostname }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'CreatedAt'" align="center" width="80">
+      <el-table-column :label="'CreatedAt'" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>

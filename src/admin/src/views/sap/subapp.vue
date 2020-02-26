@@ -19,7 +19,7 @@
           <span>{{ scope.row.subappid }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'subappsid'" class-name="status-col">
+      <el-table-column :label="'subappsid'" class-name="status-col" width="100">
         <template slot-scope="scope">
           <span>{{ scope.row.subappsid }}</span>
         </template>
@@ -34,12 +34,12 @@
           <span>{{ scope.row.appid }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'subappdesc'" class-name="status-col" width="100">
+      <el-table-column :label="'subappdesc'" class-name="status-col">
         <template slot-scope="scope">
           <span>{{ scope.row.subappdesc }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'CreatedAt'" align="center" width="80">
+      <el-table-column :label="'CreatedAt'" align="center" width="150">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
@@ -47,7 +47,7 @@
       <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <router-link :to="'/subapps/'+scope.row.subappid+'/instances'" class="link-type">
-            <el-button type="primary" size="mini">
+            <el-button type="primary">
               InstanceList
             </el-button>
           </router-link>

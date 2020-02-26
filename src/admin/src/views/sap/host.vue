@@ -19,17 +19,17 @@
           <span>{{ scope.row.hostid }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'hostname'" class-name="status-col">
+      <el-table-column :label="'hostname'" class-name="status-col" width="150">
         <template slot-scope="scope">
           <span>{{ scope.row.hostname }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'hostdomain'" prop="hostdomain" align="center">
+      <el-table-column :label="'hostdomain'" prop="hostdomain" align="center" width="200">
         <template slot-scope="scope">
           <span>{{ scope.row.hostdomain }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'ipaddress'" class-name="status-col" width="100">
+      <el-table-column :label="'ipaddress'" class-name="status-col">
         <template slot-scope="scope">
           <span>{{ scope.row.ipaddress }}</span>
         </template>
@@ -41,10 +41,10 @@
       </el-table-column>
       <el-table-column :label="'memory'" class-name="status-col" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.memory }}</span>
+          <span>{{ parseInt(scope.row.memory / 1024 / 1024) }} MB</span>
         </template>
       </el-table-column>
-      <el-table-column :label="'CreatedAt'" align="center" width="80">
+      <el-table-column :label="'CreatedAt'" align="center" width="150">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
@@ -52,7 +52,7 @@
       <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <router-link :to="'/hosts/'+scope.row.hostid+'/instances'" class="link-type">
-            <el-button type="primary" size="mini">
+            <el-button type="primary">
               InstanceList
             </el-button>
           </router-link>
