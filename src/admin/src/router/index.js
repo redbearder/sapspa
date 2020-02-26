@@ -219,6 +219,22 @@ export const asyncRoutes = [
       }
     ]
   },
+  {
+    path: '/logins',
+    component: Layout,
+    name: 'logins',
+    children: [
+      {
+        path: '/logins',
+        component: () => import('@/views/sap/login'),
+        name: 'logins',
+        meta: {
+          title: 'Logins',
+          icon: 'table'
+        }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

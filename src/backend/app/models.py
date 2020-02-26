@@ -156,6 +156,26 @@ class InstanceModel(db.Model):
     host = db.relationship('HostModel', foreign_keys=[hostid])
 
 
+class LoginModel(db.Model):
+    __tablename__ = 'saplogin'
+    loginid = db.Column(db.Integer,
+                        primary_key=True,
+                        autoincrement=True,
+                        comment='login unique id')
+    subappid = db.Column(db.Integer, db.ForeignKey('subapp.subappid'))
+    username = db.Column(db.String(50), nullable=False, comment='username')
+    password = db.Column(db.String(50), nullable=False, comment='password')
+    client = db.Column(db.String(5), nullable=False, comment='client number')
+    createdAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          comment='instance create datetime')
+    updatedAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          onupdate=db.func.now(),
+                          comment='instance update datetime')
+    subapp = db.relationship('SubappModel', foreign_keys=[subappid])
+
+
 # Custom validator
 def must_not_be_blank(data):
     if not data:
@@ -221,5 +241,18 @@ class InstanceSchema(Schema):
     instancetype = fields.Str(required=True)
     subapp = fields.Nested(SubappSchema)
     host = fields.Nested(HostSchema)
+    createdAt = fields.DateTime(dump_only=True)
+    updatedAt = fields.DateTime(dump_only=True)
+
+
+class LoginSchema(Schema):
+    loginid = fields.Int(dump_only=True)
+    username = fields.Str(required=True,
+                          validate=validate.Length(min=3, max=50))
+    password = fields.Str(required=True,
+                          validate=validate.Length(min=3, max=50))
+    client = fields.Str(required=True, validate=validate.Length(equal=3))
+    subappid = fields.Int(required=True)
+    subapp = fields.Nested(SubappSchema)
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)

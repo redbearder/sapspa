@@ -7,6 +7,7 @@ from app.mapi.subapps import SubApp, SubApps, SubAppsInApp
 from app.mapi.hosts import Host, Hosts
 from app.mapi.instances import Instace, Instances, InstancesInSubApp, InstancesInHost
 from app.mapi.tokens import Token, Tokens
+from app.mapi.logins import Login, Logins
 
 api = Api(bp)
 
@@ -27,3 +28,6 @@ api.add_resource(InstancesInHost, "/hosts/<hostid>/instances")
 
 api.add_resource(Tokens, "/tokens")
 api.add_resource(Token, "/tokens/<token>")
+
+api.add_resource(Logins, "/logins")
+api.add_resource(Login, "/logins/<loginid>")
