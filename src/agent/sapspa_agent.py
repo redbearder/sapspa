@@ -19,13 +19,10 @@ import schedule
 from configobj import ConfigObj
 from optparse import OptionParser
 from pyrfc import Connection
-import decimal
 from decimal import Decimal
 import consul
 import yaml
 import shlex, subprocess
-
-instmonfrequency = 30  # seconds
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -62,38 +59,28 @@ class JsonCustomEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-class Host(object):
-    singleton = None
+def get_host_info():
+    cpu = psutil.cpu_count()
+    mem = psutil.virtual_memory().total
+    swap = psutil.swap_memory().total
+    hostname = socket.gethostname()
+    ipaddress: List[Dict] = []
+    ifinfo = psutil.net_if_addrs()
+    for key in ifinfo.keys():
+        if '127.0.0.1' == ifinfo[key][0].address:
+            continue
+        ifinfodict = {}
+        ifinfodict['device'] = key
+        ifinfodict['ip'] = ifinfo[key][0].address
+        ipaddress.append(ifinfodict)
 
-    def __new__(cls, *args, **kwargs):
-        if cls.singleton is None:
-            cls.singleton = super().__new__(cls)
-        return cls.singleton
-
-    def __init__(self):
-        self.cpu = None
-        self.mem = None
-        self.swap = None
-        self.hostname = None
-        self.ipaddress: List[Dict] = []
-        self.cpu = psutil.cpu_count()
-        self.mem = psutil.virtual_memory().total
-        self.swap = psutil.swap_memory().total
-        self.hostname = socket.gethostname()
-        ifinfo = psutil.net_if_addrs()
-        for key in ifinfo.keys():
-            if '127.0.0.1' == ifinfo[key][0].address:
-                continue
-            ifinfodict = {}
-            ifinfodict['device'] = key
-            ifinfodict['ip'] = ifinfo[key][0].address
-            self.ipaddress.append(ifinfodict)
-
-    @property
-    def ipaddressList(self):
-        return self.ipaddress
-
-    pass
+    return {
+        "cpu": cpu,
+        "mem": mem,
+        "swap": swap,
+        "hostname": hostname,
+        "ip": ipaddress
+    }
 
 
 def get_sid_list():
@@ -466,6 +453,27 @@ with open('/etc/filebeat/inputs.d/sapspa.yml', 'w') as f:
     })
     f.write(yaml.dump(filebeat_input_list))
     pass
+
+# post sap instance and host info to master
+subapp_list: List[Dict] = []
+for sid in sidList:
+    subapp: Dict = {}
+    subapp['sid'] = sid
+    instance_list: List[Dict] = []
+    for instance in get_instance_list_by_sid(sid):
+        instance_list.append(instance)
+    subapp['instance'] = instance_list
+    subapp_list.append(subapp)
+post_dict = {"host": get_host_info(), "app": subapp_list}
+print(post_dict)
+
+kvid, kvv = c.kv.get('sapspa_master')
+master_value_dict = json.loads(kvv['Value'])
+master_ip = master_value_dict['ip']
+
+requests.post(f'http://{master_ip}:23381/api/v1/agents',
+              data=post_dict,
+              headers={'content-type': 'application/json'})
 
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests

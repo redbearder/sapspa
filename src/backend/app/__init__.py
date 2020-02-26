@@ -74,7 +74,7 @@ def create_app(config_class=Config):
         else:
             if not os.path.exists('logs'):
                 os.mkdir('logs')
-            file_handler = RotatingFileHandler('logs/sapspa.log',
+            file_handler = RotatingFileHandler('logs/sapspa_backend.log',
                                                maxBytes=10240,
                                                backupCount=10)
             file_handler.setFormatter(

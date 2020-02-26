@@ -15,7 +15,6 @@ from marshmallow import (Schema, ValidationError, fields, post_load, pprint,
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, login
-from app.search import add_to_index, query_index, remove_from_index
 
 ##### MODELS #####
 
@@ -87,9 +86,8 @@ class SubappModel(db.Model):
                           index=True,
                           comment='subapp SID')
     subappurl = db.Column(db.String(100), nullable=False, comment='subapp url')
-    appid = db.Column(db.Integer, db.ForeignKey('app.appid'))
     subappdesc = db.Column(db.String(100),
-                           nullable=False,
+                           nullable=True,
                            comment='subapp description')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),
@@ -98,10 +96,6 @@ class SubappModel(db.Model):
                           default=db.func.now(),
                           onupdate=db.func.now(),
                           comment='subapp update datetime')
-    app = db.relationship('AppModel', foreign_keys=[appid])
-
-    __table_args__ = (db.UniqueConstraint('subappsid', 'appid',
-                                          name='uix_1'), )
 
 
 class HostModel(db.Model):
@@ -148,6 +142,9 @@ class InstanceModel(db.Model):
     instanceno = db.Column(db.String(5),
                            nullable=False,
                            comment='instance number')
+    instancetype = db.Column(db.String(10),
+                             nullable=False,
+                             comment='instance type')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),
                           comment='instance create datetime')
@@ -193,10 +190,8 @@ class AppSchema(Schema):
 class SubappSchema(Schema):
     subappid = fields.Int(dump_only=True)
     subappsid = fields.Str(required=True, validate=validate.Length(equal=3))
-    subappurl = fields.URL(required=True)
-    appid = fields.Int(required=True)
-    app = fields.Nested(AppSchema)
-    subappdesc = fields.Str(required=True,
+    subappurl = fields.URL(required=False)
+    subappdesc = fields.Str(required=False,
                             validate=validate.Length(min=3, max=255))
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)
@@ -205,13 +200,13 @@ class SubappSchema(Schema):
 class HostSchema(Schema):
     hostid = fields.Int(dump_only=True)
     hostname = fields.Str(required=True,
-                          validate=validate.Length(min=8, max=20))
-    hostdomain = fields.Str(required=True,
+                          validate=validate.Length(min=6, max=20))
+    hostdomain = fields.Str(required=False,
                             validate=validate.Length(min=4, max=50))
     ipaddress = fields.Str()
     cpu = fields.Int()
     memory = fields.Int()
-    fsmount = fields.Str()
+    fsmount = fields.Str(required=False)
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)
 
@@ -223,6 +218,7 @@ class InstanceSchema(Schema):
     instanceno = fields.Str(required=True, validate=validate.Length(equal=2))
     subappid = fields.Int(required=True)
     hostid = fields.Int(required=True)
+    instancetype = fields.Str(required=True)
     subapp = fields.Nested(SubappSchema)
     host = fields.Nested(HostSchema)
     createdAt = fields.DateTime(dump_only=True)
