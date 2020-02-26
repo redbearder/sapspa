@@ -10,7 +10,6 @@ instances_schema = InstanceSchema(many=True)
 
 
 class Instances(Resource):
-    @jwt_required
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
@@ -20,7 +19,6 @@ class Instances(Resource):
         instances_result = instances_schema.dump(data.items)
         return query_request({'rows': instances_result, 'count': datacount})
 
-    @jwt_required
     def post(self):
         # 新增数据
         data = request.get_json()
@@ -32,14 +30,12 @@ class Instances(Resource):
 
 
 class Instace(Resource):
-    @jwt_required
     def get(self, instid):
         # 返回所有数据
         app = InstanceModel.query.get(instid)
         app_result = instance_schema.dump(app)
         return query_request(app_result)
 
-    @jwt_required
     def put(self, instid):
         data = request.get_json()
         app = InstanceModel.query.filter_by(instid=instid).update(data)
@@ -48,7 +44,6 @@ class Instace(Resource):
 
 
 class InstancesInSubApp(Resource):
-    @jwt_required
     def get(self, subappid):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
@@ -66,7 +61,6 @@ class InstancesInSubApp(Resource):
 
 
 class InstancesInHost(Resource):
-    @jwt_required
     def get(self, hostid):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)

@@ -11,7 +11,6 @@ app_schema = AppSchema()
 
 
 class Apps(Resource):
-    @jwt_required
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
@@ -21,7 +20,6 @@ class Apps(Resource):
         apps_result = apps_schema.dump(data.items)
         return query_request({'rows': apps_result, 'count': datacount})
 
-    @jwt_required
     def post(self):
         # 新增数据
         data = request.get_json()
@@ -33,14 +31,12 @@ class Apps(Resource):
 
 
 class App(Resource):
-    @jwt_required
     def get(self, appid):
         # 返回所有数据
         app = AppModel.query.get(appid)
         app_result = app_schema.dump(app)
         return query_request(app_result)
 
-    @jwt_required
     def put(self, appid):
         # 新增数据
         data = request.get_json()

@@ -113,7 +113,7 @@ class HostModel(db.Model):
                            comment='host domain name')
     ipaddress = db.Column(db.String(255), nullable=False, comment='ip address')
     cpu = db.Column(db.Integer, nullable=False, comment='cpu')
-    memory = db.Column(db.Integer, nullable=False, comment='memory')
+    memory = db.Column(db.BigInteger, nullable=False, comment='memory')
     fsmount = db.Column(db.TEXT, nullable=False, comment='file system mount')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),

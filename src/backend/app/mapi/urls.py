@@ -19,7 +19,6 @@ api.add_resource(SubAppsInApp, "/apps/<appid>/subapps")
 
 api.add_resource(Hosts, "/hosts")
 api.add_resource(Host, "/hosts/<hostid>")
-# api.add_resource(HostsInSubApp, "/subapps/<subappid>/hosts")
 
 api.add_resource(Instances, "/instances")
 api.add_resource(Instace, "/instances/<instid>")

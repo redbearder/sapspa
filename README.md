@@ -25,10 +25,11 @@
 - [x] Consul, port 8300: 23340, 8302: 23342, 8301: 23341, 8600: 23346, 8500: 23345
 - [x] node_exporter, port 23311
 
-### 3. build es and kibana
+### 3. build apps
 - [x] es, port 23392, 23393
 - [x] kibana, port 23356
 - [x] filebeat and live reload
+- [x] prometheus, port 23390
 
 ### 4. grafana dashboard
 - [ ] usercount list and user type dist

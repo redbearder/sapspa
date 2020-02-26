@@ -12,6 +12,8 @@ CONSUL_VERSION=1.7.1
 MASTER_IP=139.9.180.161
 NODE_EXPORTER_VERSION=0.18.1
 ELK_VERSION=7.4.2
+PROMETHEUS_VERSION=2.16.0
+NODE_VERSION=12.16.1
 
 USAGE="Usage: $BASENAME [OPTIONS]
 A SAP system monitor agent script to install and start
@@ -113,7 +115,29 @@ echo "start consul"
 nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
 
 # start backend
+pip install gunicorn
+gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app
 # start admin
+# download node
+wget https://nodejs.org/dist/v12.16.1/node-v${NODE_VERSION}-linux-x64.tar.xz  -O ${BASE_DIR}script/download/node.tar.xz
+xz -d ${BASE_DIR}script/download/node.tar.xz
+tar xvf ${BASE_DIR}script/download/node.tar ${BASE_DIR}script/download/
+mv ${BASE_DIR}script/download/node-v${NODE_VERSION}-linux-x64 ${BASE_DIR}app/node
+echo 'export NODEJS_HOME="${BASE_DIR}app/node"' >> ~/.bash_profile
+echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profile
+source ~/.bash_profile
+npm install -g yarn
+cd ${BASE_DIR}src/admin
+yarn
+npm run build:prod
+
+#download prometheus
+wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/prometheus.tar.gz
+tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz ${BASE_DIR}script/download/
+mv ${BASE_DIR}script/download/prometheus-${PROMETHEUS_VERSION}.linux-amd64 ${BASE_DIR}app/prometheus
+#start prometheus
+cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
+nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" &
 
 # create user search
 useradd -d /home/search -m search

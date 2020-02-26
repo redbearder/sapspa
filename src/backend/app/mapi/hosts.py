@@ -6,13 +6,16 @@ import consul
 from app import db
 from app.utils import bad_request, normal_request, query_request
 from app.models import HostModel, HostSchema
+from app.models import InstanceModel, InstanceSchema
 
 host_schema = HostSchema()
 hosts_schema = HostSchema(many=True)
+instance_schema = InstanceSchema()
+instances_schema = InstanceSchema(many=True)
 
 
 class Hosts(Resource):
-    @jwt_required
+    # @jwt_required
     def get(self):
         # 返回所有数据
         page = request.args.get("page", 1, type=int)
@@ -22,7 +25,6 @@ class Hosts(Resource):
         hosts_result = hosts_schema.dump(data.items)
         return query_request({'rows': hosts_result, 'count': datacount})
 
-    @jwt_required
     def post(self):
         # 新增数据
         data = request.get_json()
@@ -34,14 +36,12 @@ class Hosts(Resource):
 
 
 class Host(Resource):
-    @jwt_required
     def get(self, hostid):
         # 返回所有数据
         app = HostModel.query.get(hostid)
         app_result = host_schema.dump(app)
         return query_request(app_result)
 
-    @jwt_required
     def put(self, hostid):
         # 新增数据
         data = request.get_json()
