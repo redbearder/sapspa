@@ -11,7 +11,7 @@ from prometheus_client import make_wsgi_app
 from prometheus_client.core import REGISTRY, CounterMetricFamily, GaugeHistogramMetricFamily, GaugeMetricFamily, HistogramMetricFamily, InfoMetricFamily, SummaryMetricFamily, StateSetMetricFamily
 from flask import Flask
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from datetime import date, time, timedelta
+from datetime import date, time, timedelta, datetime
 import random
 import time
 import requests
@@ -147,14 +147,23 @@ class R3rfcconn(object):
     def get_function_description(self, func_name):
         return self.conn.get_function_description(func_name)
 
-    def get_table_data(self, tablename: str, offset: int = 0, limit: int = 0):
+    def get_table_data(
+            self,
+            tablename: str,
+            offset: int = 0,
+            limit: int = 0,
+            options: List = [],
+            fields: List = [],
+    ):
         read_table_fm = 'RFC_READ_TABLE'
         kwparam = {}
         kwparam['QUERY_TABLE'] = tablename
         kwparam['ROWSKIPS'] = offset
         kwparam['ROWCOUNT'] = limit
+        kwparam['OPTIONS'] = options
+        kwparam['FIELDS'] = fields
         result = self.conn.call(read_table_fm, **kwparam)
-        return json.dumps(result, cls=JsonCustomEncoder)
+        return result
 
     def get_rfc_data(self, fm: str, **kwparam: dict):
         result = self.conn.call(fm, **kwparam)
@@ -182,14 +191,55 @@ class R3rfcconn(object):
         kwparam = {}
         return self.get_rfc_data('TH_USER_LIST', **kwparam)['USRLIST']
 
-    def get_bkjob_list(self, servername):
+    def get_bkjob_status_count(self):
         '''
-        need confirm
+        tables: TBTCP,TBTCO and TBTCS, views: V_OP
+        get per 15s by promethues define scrawl
+        The statuses have the following meanings:
+
+            Scheduled: not yet been released to run. P
+            Released: released to run. S
+            Ready: start date and time have come: awaiting execution.
+            Active: currently running. R
+            After a system failure, can indicate that a job was interrupted by the failure and must be manually restarted.
+            
+            Finished: successfully completed. F
+            Aborted: not successfully completed. A
+            
         :param servername: 
         :return: 
         '''
-        kwparam = {}
-        return self.get_rfc_data('BDL_READ_JOB_STATUS', **kwparam)
+
+        job_finish = self.get_table_data(
+            'V_OP',
+            options=[
+                f"STATUS EQ 'F' AND ENDDATE EQ '{date.today()}' AND ENDTIME GT '{(datetime.now()-timedelta(seconds=15)).strftime('%H%M%S')}'"
+            ],
+            fields=[
+                'JOBNAME', 'STRTDATE', 'STRTTIME', 'ENDDATE', 'ENDTIME',
+                'PRDMINS', 'PRDHOURS', 'STATUS'
+            ])
+        job_running = self.get_table_data('V_OP',
+                                          options=[f"STATUS EQ 'R'"],
+                                          fields=[
+                                              'JOBNAME', 'STRTDATE',
+                                              'STRTTIME', 'ENDDATE', 'ENDTIME',
+                                              'PRDMINS', 'PRDHOURS', 'STATUS'
+                                          ])
+        job_cancel = self.get_table_data(
+            'V_OP',
+            options=[
+                f"STATUS EQ 'A' AND ENDDATE EQ '{date.today()}' AND ENDTIME GT '{(datetime.now()-timedelta(seconds=15)).strftime('%H%M%S')}'"
+            ],
+            fields=[
+                'JOBNAME', 'STRTDATE', 'STRTTIME', 'ENDDATE', 'ENDTIME',
+                'PRDMINS', 'PRDHOURS', 'STATUS'
+            ])
+        return {
+            "finish": len(job_finish['DATA']),
+            "running": len(job_running['DATA']),
+            "cancel": len(job_cancel['DATA'])
+        }
 
     def get_dump_list(self):
         # date.today() - timedelta(1), DATE_TO = date.today(), TIME_FROM = '000000', TIME_TO = '235959')
@@ -213,12 +263,9 @@ class R3rfcconn(object):
         kwparam = {}
         return self.get_rfc_data('RFC_SERVER_GROUP_RESOURCES', **kwparam)
 
-    def get_transport_list(self, tablename):
+    def get_transport_list(self):
+        tablename = 'E070'
         return self.get_table_data(tablename)
-
-    def get_instance_status(self, servername):
-        kwparam = {}
-        return self.get_rfc_data('', **kwparam)
 
     def close(self):
         self.conn.close()
@@ -336,6 +383,20 @@ class SAPCollector(object):
                                 labels=['SID'])
                             g_dumpcount.add_metric([sid], len(DUMPLIST))
                             yield g_dumpcount
+
+                            # get bk job status
+                            job_status = conn.get_bkjob_status_count()
+                            g_jobstatus = GaugeMetricFamily(
+                                "BKJobCount",
+                                'Current Background Job Count Status',
+                                labels=['SID', 'BKJobStatus'])
+                            g_jobstatus.add_metric([sid, 'Finish'],
+                                                   job_status['finish'])
+                            g_jobstatus.add_metric([sid, 'Running'],
+                                                   job_status['running'])
+                            g_jobstatus.add_metric([sid, 'Cancel'],
+                                                   job_status['cancel'])
+                            yield g_jobstatus
                     else:
                         c.kv.put(sid + '_master',
                                  json.dumps({"servername": servername}))
@@ -356,7 +417,21 @@ class SAPCollector(object):
                             labels=['SID'])
                         g_dumpcount.add_metric([sid], len(DUMPLIST))
                         yield g_dumpcount
-                        pass
+
+                        # get bk job status
+                        job_status = conn.get_bkjob_status_count()
+                        g_jobstatus = GaugeMetricFamily(
+                            "BKJobCount",
+                            'Current Background Job Count Status',
+                            labels=['SID', 'BKJobStatus'])
+                        g_jobstatus.add_metric([sid, 'Finish'],
+                                               job_status['finish'])
+                        g_jobstatus.add_metric([sid, 'Running'],
+                                               job_status['running'])
+                        g_jobstatus.add_metric([sid, 'Cancel'],
+                                               job_status['cancel'])
+                        yield g_jobstatus
+
                     # during workprocess count, by wp type
                     wplist = conn.get_server_wp_list(servername)
                     running_dia_count = 0
@@ -468,12 +543,13 @@ post_dict = {"host": get_host_info(), "app": subapp_list}
 print(post_dict)
 
 kvid, kvv = c.kv.get('sapspa_master')
-master_value_dict = json.loads(kvv['Value'])
-master_ip = master_value_dict['ip']
+if kvv:
+    master_value_dict = json.loads(kvv['Value'])
+    master_ip = master_value_dict['ip']
 
-requests.post(f'http://{master_ip}:23381/api/v1/agents',
-              data=post_dict,
-              headers={'content-type': 'application/json'})
+    requests.post(f'http://{master_ip}:23381/api/v1/agents',
+                  data=post_dict,
+                  headers={'content-type': 'application/json'})
 
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests
