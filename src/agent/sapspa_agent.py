@@ -328,13 +328,16 @@ class SAPCollector(object):
             if kvv:
                 # get SID login info from consul
                 kvvDict = json.loads(kvv['Value'])
-                conn = R3rfcconn(r3ashost='127.0.0.1',
-                                 r3sysnr=kvvDict['r3sysnr'],
-                                 r3client=kvvDict['r3client'],
-                                 r3user=kvvDict['r3user'],
-                                 r3pwd=kvvDict['r3pwd'])
+                conn = None
 
                 for instance in get_instance_list_by_sid(sid):
+                    if not conn and instance['type'] == 'DIALOG':
+                        conn = R3rfcconn(r3ashost='127.0.0.1',
+                                         r3sysnr=instance['sysnr'],
+                                         r3client=kvvDict['r3client'],
+                                         r3user=kvvDict['r3user'],
+                                         r3pwd=kvvDict['r3pwd'])
+
                     instance_check_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {instance["sysnr"]} -function GetProcessList"'
                     instance_check_cmd_args = shlex.split(instance_check_cmd)
                     sp = subprocess.run(instance_check_cmd_args,
@@ -360,12 +363,47 @@ class SAPCollector(object):
                         pass
                     pass
 
-                for servername in get_instance_servername_list_by_sid(sid):
-                    # master identification
-                    kvid_master, kvv_master = c.kv.get(sid + '_master')
-                    if kvv_master:
-                        kvvDict_master = json.loads(kvv_master['Value'])
-                        if servername == kvvDict_master['servername']:
+                if conn:
+                    for servername in get_instance_servername_list_by_sid(sid):
+                        # master identification
+                        kvid_master, kvv_master = c.kv.get(sid + '_master')
+                        if kvv_master:
+                            kvvDict_master = json.loads(kvv_master['Value'])
+                            if servername == kvvDict_master['servername']:
+                                # during user count, by user type
+                                USRLIST = conn.get_user_list()
+                                g_usercount = GaugeMetricFamily(
+                                    "UserCount",
+                                    'System Overall User Count',
+                                    labels=['SID'])
+                                g_usercount.add_metric([sid], len(USRLIST))
+                                yield g_usercount
+
+                                # during dump count
+                                DUMPLIST = conn.get_dump_list()
+                                g_dumpcount = GaugeMetricFamily(
+                                    "DumpCount",
+                                    'System Overall Dump Count',
+                                    labels=['SID'])
+                                g_dumpcount.add_metric([sid], len(DUMPLIST))
+                                yield g_dumpcount
+
+                                # get bk job status
+                                job_status = conn.get_bkjob_status_count()
+                                g_jobstatus = GaugeMetricFamily(
+                                    "BKJobCount",
+                                    'Current Background Job Count Status',
+                                    labels=['SID', 'BKJobStatus'])
+                                g_jobstatus.add_metric([sid, 'Finish'],
+                                                       job_status['finish'])
+                                g_jobstatus.add_metric([sid, 'Running'],
+                                                       job_status['running'])
+                                g_jobstatus.add_metric([sid, 'Cancel'],
+                                                       job_status['cancel'])
+                                yield g_jobstatus
+                        else:
+                            c.kv.put(sid + '_master',
+                                     json.dumps({"servername": servername}))
                             # during user count, by user type
                             USRLIST = conn.get_user_list()
                             g_usercount = GaugeMetricFamily(
@@ -397,70 +435,36 @@ class SAPCollector(object):
                             g_jobstatus.add_metric([sid, 'Cancel'],
                                                    job_status['cancel'])
                             yield g_jobstatus
-                    else:
-                        c.kv.put(sid + '_master',
-                                 json.dumps({"servername": servername}))
-                        # during user count, by user type
-                        USRLIST = conn.get_user_list()
-                        g_usercount = GaugeMetricFamily(
-                            "UserCount",
-                            'System Overall User Count',
-                            labels=['SID'])
-                        g_usercount.add_metric([sid], len(USRLIST))
-                        yield g_usercount
 
-                        # during dump count
-                        DUMPLIST = conn.get_dump_list()
-                        g_dumpcount = GaugeMetricFamily(
-                            "DumpCount",
-                            'System Overall Dump Count',
-                            labels=['SID'])
-                        g_dumpcount.add_metric([sid], len(DUMPLIST))
-                        yield g_dumpcount
+                        # during workprocess count, by wp type
+                        wplist = conn.get_server_wp_list(servername)
+                        running_dia_count = 0
+                        running_upd_count = 0
+                        running_btc_count = 0
+                        for wp in wplist:
+                            if wp['WP_ISTATUS'] != 2:
+                                if wp['WP_TYP'] == 'DIA':
+                                    running_dia_count += 1
+                                    pass
+                                if wp['WP_TYP'] == 'BTC':
+                                    running_btc_count += 1
+                                    pass
+                                if wp['WP_TYP'] == 'UPD':
+                                    running_upd_count += 1
+                                    pass
+                        g_wpcount = GaugeMetricFamily(
+                            "WorkprocessCount",
+                            'WorkprocessCount of One Instance in SID group by Type',
+                            labels=['SID', 'Instance', 'WorkprocessType'])
+                        g_wpcount.add_metric([sid, servername, 'DIA'],
+                                             running_dia_count)
+                        g_wpcount.add_metric([sid, servername, 'BTC'],
+                                             running_btc_count)
+                        g_wpcount.add_metric([sid, servername, 'UPD'],
+                                             running_upd_count)
+                        yield g_wpcount
 
-                        # get bk job status
-                        job_status = conn.get_bkjob_status_count()
-                        g_jobstatus = GaugeMetricFamily(
-                            "BKJobCount",
-                            'Current Background Job Count Status',
-                            labels=['SID', 'BKJobStatus'])
-                        g_jobstatus.add_metric([sid, 'Finish'],
-                                               job_status['finish'])
-                        g_jobstatus.add_metric([sid, 'Running'],
-                                               job_status['running'])
-                        g_jobstatus.add_metric([sid, 'Cancel'],
-                                               job_status['cancel'])
-                        yield g_jobstatus
-
-                    # during workprocess count, by wp type
-                    wplist = conn.get_server_wp_list(servername)
-                    running_dia_count = 0
-                    running_upd_count = 0
-                    running_btc_count = 0
-                    for wp in wplist:
-                        if wp['WP_ISTATUS'] != 2:
-                            if wp['WP_TYP'] == 'DIA':
-                                running_dia_count += 1
-                                pass
-                            if wp['WP_TYP'] == 'BTC':
-                                running_btc_count += 1
-                                pass
-                            if wp['WP_TYP'] == 'UPD':
-                                running_upd_count += 1
-                                pass
-                    g_wpcount = GaugeMetricFamily(
-                        "WorkprocessCount",
-                        'WorkprocessCount of One Instance in SID group by Type',
-                        labels=['SID', 'Instance', 'WorkprocessType'])
-                    g_wpcount.add_metric([sid, servername, 'DIA'],
-                                         running_dia_count)
-                    g_wpcount.add_metric([sid, servername, 'BTC'],
-                                         running_btc_count)
-                    g_wpcount.add_metric([sid, servername, 'UPD'],
-                                         running_upd_count)
-                    yield g_wpcount
-
-                conn.close()
+                    conn.close()
         '''
         during job count, by job type
         during rfc resource, total and remain
