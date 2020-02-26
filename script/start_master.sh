@@ -115,10 +115,12 @@ echo "start consul"
 nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
 
 # start backend
+echo "start backend"
 pip install gunicorn
 gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app
 # start admin
 # download node
+echo "download node"
 wget https://nodejs.org/dist/v12.16.1/node-v${NODE_VERSION}-linux-x64.tar.xz  -O ${BASE_DIR}script/download/node.tar.xz
 xz -d ${BASE_DIR}script/download/node.tar.xz
 tar xvf ${BASE_DIR}script/download/node.tar ${BASE_DIR}script/download/
@@ -128,20 +130,32 @@ echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profi
 source ~/.bash_profile
 npm install -g yarn
 cd ${BASE_DIR}src/admin
+echo "install node module"
 yarn
 npm run build:prod
+echo "download caddy http server"
+wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz
+tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz ${BASE_DIR}script/download/
+mv ${BASE_DIR}script/download/caddy /usr/local/bin
+echo "start caddy"
+sed -i "s/\/sapspa\/src\/admin\/dist//${BASE_DIR}src\/admin\/dist/g" ${BASE_DIR}etc/caddy/Caddyfile
+nohup caddy -conf ${BASE_DIR}etc/caddy/Caddyfile &
 
 #download prometheus
+echo "download prometheus"
 wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/prometheus.tar.gz
 tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz ${BASE_DIR}script/download/
 mv ${BASE_DIR}script/download/prometheus-${PROMETHEUS_VERSION}.linux-amd64 ${BASE_DIR}app/prometheus
 #start prometheus
+echo "start prometheus"
 cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
 nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" &
 
 # create user search
+echo "create user search"
 useradd -d /home/search -m search
 # download ELK elasticsearch
+echo "download ELK elasticsearch"
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
 tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz ${BASE_DIR}script/download/
 mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/elasticsearch
@@ -150,6 +164,7 @@ sed -i "s/\/home\/search\/elasticsearch-7.4.2/${BASE_DIR}app\/elasticsearch/g" $
 cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml ${BASE_DIR}app/elasticsearch/config/elasticsearch.yml
 
 # download ELK kibana
+echo "download ELK kibana"
 wget https://artifacts.elastic.co/downloads/kibana/kibana-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/kibana.tar.gz
 tar zxvf ${BASE_DIR}script/download/kibana.tar.gz ${BASE_DIR}script/download/
 mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
@@ -158,6 +173,7 @@ sed -i "s/\/home\/search\/kibana-7.4.2-linux-x86_64/${BASE_DIR}app\/kibana/g" ${
 cp ${BASE_DIR}etc/kibana/kibana.yml ${BASE_DIR}app/kibana/config/kibana.yml
 
 # download ELK grafana
+echo "download ELK grafana"
 wget https://dl.grafana.com/oss/release/grafana-6.6.2.linux-amd64.tar.gz  -O ${BASE_DIR}script/download/grafana.tar.gz
 tar zxvf ${BASE_DIR}script/download/grafana.tar.gz ${BASE_DIR}script/download/
 mv ${BASE_DIR}script/download/grafana-6.6.2 ${BASE_DIR}app/grafana
@@ -166,10 +182,12 @@ sed -i "s/\/home\/search\/grafana-6.6.2/${BASE_DIR}app\/grafana/g" ${BASE_DIR}et
 cp ${BASE_DIR}etc/grafana/default.ini ${BASE_DIR}app/grafana/conf/default.ini
 
 # install supervisord
+echo "install supervisord"
 pip install supervisor
 cp -Rf ${BASE_DIR}etc/supervisord /etc/
 mkdir /var/run/supervisor
 # start supervisord
+echo "start supervisord"
 supervisorctl -c /etc/supervisord/supervisord.conf
 supervisorctl reload
 supervisorctl start all
