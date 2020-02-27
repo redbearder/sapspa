@@ -65,5 +65,4 @@
 ```
 maybe some code here
 
-./consul agent -bind 127.0.0.1 -data-dir=consuldata -ui -bootstrap -server -datacenter=dc1
 ```
