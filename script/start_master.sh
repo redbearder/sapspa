@@ -74,112 +74,176 @@ do
         esac
 done
 
-# download pyenv
-echo "download pyenv"
-wget https://github.com/pyenv/pyenv/archive/v${PYENV_VERSION}.tar.gz -O ${BASE_DIR}script/download/pyenv.tar.gz
-echo "install pyenv"
-tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/pyenv-${PYENV_VERSION} ~/.pyenv
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
-echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
-echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
-exec "$SHELL"
-# install python3.7.5 via pyenv
-mkdir ~/.pyenv/sources
-mkdir ~/.pyenv/sources/${PYTHON_VERSION}
-echo "download Python "$PYTHON_VERSION
-wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
-echo "install Python "${PYTHON_VERSION}
-pyenv install ${PYTHON_VERSION}
-pyenv local ${PYTHON_VERSION}
-# pip install -r requirements.txt
-echo "Install Python requirements"
-pip install -r ${BASE_DIR}src/agent/requirements.txt
-# install nwrfc lib
-echo "install nwrfc lib"
-unzip ${BASE_DIR}lib/nwrfc750P_4-70002752.zip -d ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/nwrfcsdk /usr/sap/nwrfcsdk
-touch /etc/ld.so.conf.d/nwrfcsdk.conf
-echo "# include nwrfcsdk" >> /etc/ld.so.conf.d/nwrfcsdk.conf
-echo "/usr/sap/nwrfcsdk/lib" >> /etc/ld.so.conf.d/nwrfcsdk.conf
-ldconfig
-# install pyrfc module
-echo "install pyrfc module"
-pip install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
-# download consul
-echo "download consul"
-wget https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip -O ${BASE_DIR}script/download/consul.zip
-unzip ${BASE_DIR}script/download/consul.zip -d /usr/local/bin
-# start consul
-echo "start consul"
-nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
+function install_pyenv()
+{
+        if command -v pyenv 1> /dev/null 2>&1; then
+            echo "pyenv already exist"
+        else
+            # download pyenv
+            echo "download pyenv"
+            wget https://github.com/pyenv/pyenv/archive/v${PYENV_VERSION}.tar.gz -O ${BASE_DIR}script/download/pyenv.tar.gz
+            echo "install pyenv"
+            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz ${BASE_DIR}script/download/
+            mv ${BASE_DIR}script/download/pyenv-${PYENV_VERSION} ~/.pyenv
+            echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
+            echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
+            echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
+            exec "$SHELL"
+        fi
+}
 
-# start backend
-echo "start backend"
-pip install gunicorn
-gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app
-# start admin
-# download node
-echo "download node"
-wget https://nodejs.org/dist/v12.16.1/node-v${NODE_VERSION}-linux-x64.tar.xz  -O ${BASE_DIR}script/download/node.tar.xz
-xz -d ${BASE_DIR}script/download/node.tar.xz
-tar xvf ${BASE_DIR}script/download/node.tar ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/node-v${NODE_VERSION}-linux-x64 ${BASE_DIR}app/node
-echo 'export NODEJS_HOME="${BASE_DIR}app/node"' >> ~/.bash_profile
-echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profile
-source ~/.bash_profile
-npm install -g yarn
-cd ${BASE_DIR}src/admin
-echo "install node module"
-yarn
-npm run build:prod
-echo "download caddy http server"
-wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz
-tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/caddy /usr/local/bin
-echo "start caddy"
-sed -i "s/\/sapspa\/src\/admin\/dist//${BASE_DIR}src\/admin\/dist/g" ${BASE_DIR}etc/caddy/Caddyfile
-nohup caddy -conf ${BASE_DIR}etc/caddy/Caddyfile &
+function install_python3()
+{
+        if command -v python3 1> /dev/null 2>&1; then
+            echo "python3 already exist"
+        else
+            # install python3.7.5 via pyenv
+            mkdir ~/.pyenv/sources
+            mkdir ~/.pyenv/sources/${PYTHON_VERSION}
+            echo "download Python "$PYTHON_VERSION
+            wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
+            echo "install Python "${PYTHON_VERSION}
+            pyenv install ${PYTHON_VERSION}
+            pyenv local ${PYTHON_VERSION}
+        fi
+}
 
-#download prometheus
-echo "download prometheus"
-wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/prometheus.tar.gz
-tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/prometheus-${PROMETHEUS_VERSION}.linux-amd64 ${BASE_DIR}app/prometheus
-#start prometheus
-echo "start prometheus"
-cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
-nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" &
+function install_master_requirements()
+{
+  # pip install -r requirements.txt
+  echo "Install Python requirements"
+  pip install -r ${BASE_DIR}src/backend/requirements.txt
+}
 
-# create user search
-echo "create user search"
-useradd -d /home/search -m search
-# download ELK elasticsearch
-echo "download ELK elasticsearch"
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
-tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/elasticsearch
-# edit elasticsearch supervisor config
-sed -i "s/\/home\/search\/elasticsearch-7.4.2/${BASE_DIR}app\/elasticsearch/g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
-cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml ${BASE_DIR}app/elasticsearch/config/elasticsearch.yml
+function install_pyrfc()
+{
+  # install nwrfc lib
+  echo "install nwrfc lib"
+  unzip ${BASE_DIR}lib/nwrfc750P_4-70002752.zip -d ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/nwrfcsdk /usr/sap/nwrfcsdk
+  touch /etc/ld.so.conf.d/nwrfcsdk.conf
+  echo "# include nwrfcsdk" > /etc/ld.so.conf.d/nwrfcsdk.conf
+  echo "/usr/sap/nwrfcsdk/lib" >> /etc/ld.so.conf.d/nwrfcsdk.conf
+  ldconfig
+  # install pyrfc module
+  echo "install pyrfc module"
+  pip install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
+}
 
-# download ELK kibana
-echo "download ELK kibana"
-wget https://artifacts.elastic.co/downloads/kibana/kibana-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/kibana.tar.gz
-tar zxvf ${BASE_DIR}script/download/kibana.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
-# edit kibana supervisor config
-sed -i "s/\/home\/search\/kibana-7.4.2-linux-x86_64/${BASE_DIR}app\/kibana/g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
-cp ${BASE_DIR}etc/kibana/kibana.yml ${BASE_DIR}app/kibana/config/kibana.yml
+function install_consul()
+{
+  # download consul
+  echo "download consul"
+  wget https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip -O ${BASE_DIR}script/download/consul.zip
+  unzip ${BASE_DIR}script/download/consul.zip -d /usr/local/bin
+  # start consul
+  # kill all consul process and restart as master
+  kill -9 $(ps -ef|grep consul|awk '{print $2}')
+  nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
+}
 
-# download ELK grafana
-echo "download ELK grafana"
-wget https://dl.grafana.com/oss/release/grafana-6.6.2.linux-amd64.tar.gz  -O ${BASE_DIR}script/download/grafana.tar.gz
-tar zxvf ${BASE_DIR}script/download/grafana.tar.gz ${BASE_DIR}script/download/
-mv ${BASE_DIR}script/download/grafana-6.6.2 ${BASE_DIR}app/grafana
-# edit grafana supervisor config
-sed -i "s/\/home\/search\/grafana-6.6.2/${BASE_DIR}app\/grafana/g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
-cp ${BASE_DIR}etc/grafana/default.ini ${BASE_DIR}app/grafana/conf/default.ini
+function start_backend()
+{
+  # start backend
+  echo "start backend"
+  pip install gunicorn
+  gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app
+}
+
+function start_admin()
+{
+  # start admin
+  # download node
+  echo "download node"
+  wget https://nodejs.org/dist/v12.16.1/node-v${NODE_VERSION}-linux-x64.tar.xz  -O ${BASE_DIR}script/download/node.tar.xz
+  xz -d ${BASE_DIR}script/download/node.tar.xz
+  tar xvf ${BASE_DIR}script/download/node.tar ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/node-v${NODE_VERSION}-linux-x64 ${BASE_DIR}app/node
+  echo 'export NODEJS_HOME="${BASE_DIR}app/node"' >> ~/.bash_profile
+  echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profile
+  source ~/.bash_profile
+  npm install -g yarn
+  cd ${BASE_DIR}src/admin
+  echo "install node module"
+  yarn
+  npm run build:prod
+  echo "download caddy http server"
+  wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz
+  tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/caddy /usr/local/bin
+  echo "start caddy"
+  sed -i "s/\/sapspa\/src\/admin\/dist//${BASE_DIR}src\/admin\/dist/g" ${BASE_DIR}etc/caddy/Caddyfile
+  nohup caddy -conf ${BASE_DIR}etc/caddy/Caddyfile &
+}
+
+function install_prometheus()
+{
+  #download prometheus
+  echo "download prometheus"
+  wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/prometheus.tar.gz
+  tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/prometheus-${PROMETHEUS_VERSION}.linux-amd64 ${BASE_DIR}app/prometheus
+  #start prometheus
+  echo "start prometheus"
+  cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
+  nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" &
+}
+
+function create_user_search()
+{
+  # create user search
+  echo "create user search"
+  useradd -d /home/search -m search
+}
+
+function install_elasticsearch()
+{
+  # download ELK elasticsearch
+  echo "download ELK elasticsearch"
+  wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
+  tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/elasticsearch
+  # edit elasticsearch supervisor config
+  sed -i "s/\/home\/search\/elasticsearch-7.4.2/${BASE_DIR}app\/elasticsearch/g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
+  cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml ${BASE_DIR}app/elasticsearch/config/elasticsearch.yml
+}
+
+function install_kibana()
+{
+  # download ELK kibana
+  echo "download ELK kibana"
+  wget https://artifacts.elastic.co/downloads/kibana/kibana-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/kibana.tar.gz
+  tar zxvf ${BASE_DIR}script/download/kibana.tar.gz ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
+  # edit kibana supervisor config
+  sed -i "s/\/home\/search\/kibana-7.4.2-linux-x86_64/${BASE_DIR}app\/kibana/g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
+  cp ${BASE_DIR}etc/kibana/kibana.yml ${BASE_DIR}app/kibana/config/kibana.yml
+}
+
+function install_grafana()
+{
+  # download ELK grafana
+  echo "download ELK grafana"
+  wget https://dl.grafana.com/oss/release/grafana-6.6.2.linux-amd64.tar.gz  -O ${BASE_DIR}script/download/grafana.tar.gz
+  tar zxvf ${BASE_DIR}script/download/grafana.tar.gz ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/grafana-6.6.2 ${BASE_DIR}app/grafana
+  # edit grafana supervisor config
+  sed -i "s/\/home\/search\/grafana-6.6.2/${BASE_DIR}app\/grafana/g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
+  cp ${BASE_DIR}etc/grafana/default.ini ${BASE_DIR}app/grafana/conf/default.ini
+}
+
+install_pyenv
+install_python3
+install_master_requirements
+install_pyrfc
+install_consul
+start_backend
+start_admin
+install_prometheus
+create_user_search
+install_elasticsearch
+install_kibana
+install_grafana
 
 # install supervisord
 echo "install supervisord"
@@ -188,6 +252,7 @@ cp -Rf ${BASE_DIR}etc/supervisord /etc/
 mkdir /var/run/supervisor
 # start supervisord
 echo "start supervisord"
+kill -9 $(ps -ef|grep supervisord|awk '{print $2}')
 supervisorctl -c /etc/supervisord/supervisord.conf
 supervisorctl reload
 supervisorctl start all
