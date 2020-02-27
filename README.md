@@ -6,9 +6,9 @@
 ## Task list
 ### 1. backend future
 - [ ] backend app list
-- [ ] backend subapp list
-- [ ] backend host list
-- [ ] backend instance list and relation redirect
+- [x] backend subapp list
+- [x] backend host list
+- [x] backend instance list and relation redirect
 - [ ] admin and backend basic auth
 - [x] 23381 port support /api /mapi
 - [x] 23380 port support /admin
@@ -17,7 +17,7 @@
 - [x] common readtable rfc function , port 23310
 - [x] usercount status data
 - [x] workprocess status
-- [ ] background job status **_V_OP_**
+- [x] background job status **_V_OP_**
 - [x] dump status
 - [x] instance status
 - [ ] transport status
@@ -49,10 +49,10 @@
 - [ ] agent
 - [ ] InfluxDB? openTSDB? **_prometheus_**?
 - [ ] consul and consul webui
-- [ ] 
 
 ### 6. bash deploy script
-- [ ] todo...
+- [x] agent
+- [x] master
 
 ### 7. unitest and ci
 - [ ] todo...
