@@ -14,6 +14,7 @@ NODE_EXPORTER_VERSION=0.18.1
 ELK_VERSION=7.4.2
 PROMETHEUS_VERSION=2.16.0
 NODE_VERSION=12.16.1
+MYSQL_ROOT_PASSWORD=''
 
 USAGE="Usage: $BASENAME [OPTIONS]
 A SAP system monitor agent script to install and start
@@ -142,6 +143,26 @@ function install_consul()
   nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
 }
 
+function intall_mysql()
+{
+  # install mysql
+  # https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
+  echo -e "\033[31m Please install Mysql-Community-Server 5.7 Manually \033[0m"
+  read -p "Please click any key when Mysql is intalled : " tmp
+  read -p "Input Mysql root password : " MYSQL_ROOT_PASSWORD
+}
+
+function create_mysql_db_sapspa()
+{
+  # create_mysql_db_sapspa
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS `sapspa` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  sed -i "s/root\@localhost/root\:${MYSQL_ROOT_PASSWORD}\@localhost/g" ${BASE_DIR}src/backend/.env
+  cd ${BASE_DIR}src/backend/
+  flash db init
+  flask db migrate
+  flask db upgrade
+}
+
 function start_backend()
 {
   # start backend
@@ -237,6 +258,8 @@ install_python3
 install_master_requirements
 install_pyrfc
 install_consul
+intall_mysql
+create_mysql_db_sapspa
 start_backend
 start_admin
 install_prometheus
