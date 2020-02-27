@@ -1,0 +1,4 @@
+0.0.0.0:23380 {
+	root /sapspa/src/admin/dist/
+    gzip
+}
