@@ -42,7 +42,7 @@ configparser==3.5.0
 constantly==15.1.0
 crcmod==1.7
 croniter==0.3.25
-cryptography==2.2.2
+cryptography==2.3
 cssselect==1.1.0
 cycler==0.10.0
 Cython==0.28.5
