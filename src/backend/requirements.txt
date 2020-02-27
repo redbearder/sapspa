@@ -4,7 +4,7 @@ aliyun-python-sdk-core-v3==2.9.1
 aliyun-python-sdk-kms==2.5.0
 amqp==2.3.2
 aniso8601==8.0.0
-apache-airflow==1.9.0
+apache-airflow==1.10.6
 appdirs==1.4.3
 Appium-Python-Client==0.48
 appnope==0.1.0
