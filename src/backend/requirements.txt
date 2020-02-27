@@ -22,7 +22,7 @@ bearychat==0.4.1
 beautifulsoup4==4.8.1
 billiard==3.5.0.4
 black==19.3b0
-bleach==3.1.0
+bleach==3.1.1
 blinker==1.4
 bokeh==1.4.0
 bs4==0.0.1
