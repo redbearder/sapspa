@@ -184,6 +184,8 @@ function install_filebeat()
   mv ${BASE_DIR}script/download/filebeat-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/filebeat
   # start filebeat
   sed -i "s?localhost:23392?${MASTER_IP}:23392?g" ${BASE_DIR}etc/filebeat/filebeat.yml
+  sed -i 's?index: "filebeat?index: "'`hostname`'-filebeat?g' ${BASE_DIR}etc/filebeat/filebeat.yml
+  cp -Rf ${BASE_DIR}etc/filebeat /etc/
   nohup ${BASE_DIR}app/filebeat/filebeat -c ${BASE_DIR}etc/filebeat/filebeat.yml >/dev/null 2>&1 &
 }
 
