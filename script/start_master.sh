@@ -5,6 +5,7 @@
 
 __VERSION__=0.1.0
 BASE_DIR="$(dirname "$0")"/../
+BASE_DIR=`pwd`/$BASE_DIR
 BASENAME=$(basename $0)
 PYTHON_VERSION=3.7.5
 PYENV_VERSION=1.2.16
@@ -89,31 +90,40 @@ function install_pyenv()
             echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
             echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
             echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
-            exec "$SHELL"
+            source ~/.bash_profile
         fi
 }
 
 function install_python3()
 {
-        if command -v python3 1> /dev/null 2>&1; then
+        # sudo apt-get update
+        # sudo apt-get upgrade
+        # sudo apt-get dist-upgrade
+        # sudo apt-get install build-essential python-dev python-setuptools python-pip python-smbus
+        # sudo apt-get install build-essential libncursesw5-dev libgdbm-dev libc6-dev
+        # sudo apt-get install zlib1g-dev libsqlite3-dev tk-dev
+        # sudo apt-get install libssl-dev openssl
+        # sudo apt-get install libffi-dev
+        if command -v python3.7 1> /dev/null 2>&1; then
             echo "python3 already exist"
+            pyenv local ${PYTHON_VERSION}
         else
             # install python3.7.5 via pyenv
             mkdir ~/.pyenv/sources
             mkdir ~/.pyenv/sources/${PYTHON_VERSION}
-            echo "download Python "$PYTHON_VERSION
-            wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
+#            echo "download Python "$PYTHON_VERSION
+#            wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
             echo "install Python "${PYTHON_VERSION}
-            pyenv install ${PYTHON_VERSION}
+            pyenv install -k ${PYTHON_VERSION}
             pyenv local ${PYTHON_VERSION}
         fi
 }
 
 function install_master_requirements()
 {
-  # pip install -r requirements.txt
+  # pip3 install -r requirements.txt
   echo "Install Python requirements"
-  pip install -r ${BASE_DIR}src/backend/requirements.txt
+  pip3 install -r ${BASE_DIR}src/backend/requirements.txt
 }
 
 function install_pyrfc()
@@ -121,6 +131,7 @@ function install_pyrfc()
   # install nwrfc lib
   echo "install nwrfc lib"
   unzip ${BASE_DIR}lib/nwrfc750P_4-70002752.zip -d ${BASE_DIR}script/download/
+  mkdir /usr/sap
   mv ${BASE_DIR}script/download/nwrfcsdk /usr/sap/nwrfcsdk
   touch /etc/ld.so.conf.d/nwrfcsdk.conf
   echo "# include nwrfcsdk" > /etc/ld.so.conf.d/nwrfcsdk.conf
@@ -128,7 +139,7 @@ function install_pyrfc()
   ldconfig
   # install pyrfc module
   echo "install pyrfc module"
-  pip install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
+  pip3 install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
 }
 
 function install_consul()
@@ -140,10 +151,10 @@ function install_consul()
   # start consul
   # kill all consul process and restart as master
   kill -9 $(ps -ef|grep consul|awk '{print $2}')
-  nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 &
+  nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 >/dev/null 2>&1 &
 }
 
-function intall_mysql()
+function install_mysql()
 {
   # install mysql
   # https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
@@ -155,10 +166,12 @@ function intall_mysql()
 function create_mysql_db_sapspa()
 {
   # create_mysql_db_sapspa
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS `sapspa` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  sed -i "s/root\@localhost/root\:${MYSQL_ROOT_PASSWORD}\@localhost/g" ${BASE_DIR}src/backend/.env
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS sapspa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  sed -i "s?root\@localhost?root\:${MYSQL_ROOT_PASSWORD}\@localhost?g" ${BASE_DIR}src/backend/.env
   cd ${BASE_DIR}src/backend/
-  flash db init
+  pyenv local ${PYTHON_VERSION}
+  pip3 install pymysql
+  flask db init
   flask db migrate
   flask db upgrade
 }
@@ -167,8 +180,8 @@ function start_backend()
 {
   # start backend
   echo "start backend"
-  pip install gunicorn
-  gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app
+  pip3 install gunicorn
+  gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app --daemon
 }
 
 function start_admin()
@@ -180,7 +193,7 @@ function start_admin()
   xz -d ${BASE_DIR}script/download/node.tar.xz
   tar xvf ${BASE_DIR}script/download/node.tar -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/node-v${NODE_VERSION}-linux-x64 ${BASE_DIR}app/node
-  echo 'export NODEJS_HOME="${BASE_DIR}app/node"' >> ~/.bash_profile
+  echo 'export NODEJS_HOME="'${BASE_DIR}'app/node"' >> ~/.bash_profile
   echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profile
   source ~/.bash_profile
   npm install -g yarn
@@ -190,11 +203,11 @@ function start_admin()
   npm run build:prod
   echo "download caddy http server"
   wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz
-  tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz -C ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/caddy /usr/local/bin
   echo "start caddy"
-  sed -i "s/\/sapspa\/src\/admin\/dist//${BASE_DIR}src\/admin\/dist/g" ${BASE_DIR}etc/caddy/Caddyfile
-  nohup caddy -conf ${BASE_DIR}etc/caddy/Caddyfile &
+  sed -i "s?\/sapspa\/src\/admin\/dist/?${BASE_DIR}src\/admin\/dist?g" ${BASE_DIR}etc/caddy/Caddyfile
+  nohup caddy -conf ${BASE_DIR}etc/caddy/Caddyfile >/dev/null 2>&1 &
 }
 
 function install_prometheus()
@@ -207,7 +220,7 @@ function install_prometheus()
   #start prometheus
   echo "start prometheus"
   cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
-  nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" &
+  nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" >/dev/null 2>&1 &
 }
 
 function create_user_search()
@@ -223,9 +236,9 @@ function install_elasticsearch()
   echo "download ELK elasticsearch"
   wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
   tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz -C ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/elasticsearch
+  mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION} ${BASE_DIR}app/elasticsearch
   # edit elasticsearch supervisor config
-  sed -i "s/\/home\/search\/elasticsearch-7.4.2/${BASE_DIR}app\/elasticsearch/g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
+  sed -i "s?\/home\/search\/elasticsearch-7.4.2?${BASE_DIR}app\/elasticsearch?g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
   cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml ${BASE_DIR}app/elasticsearch/config/elasticsearch.yml
 }
 
@@ -237,7 +250,7 @@ function install_kibana()
   tar zxvf ${BASE_DIR}script/download/kibana.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
   # edit kibana supervisor config
-  sed -i "s/\/home\/search\/kibana-7.4.2-linux-x86_64/${BASE_DIR}app\/kibana/g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
+  sed -i "s?\/home\/search\/kibana-7.4.2-linux-x86_64?${BASE_DIR}app\/kibana?g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
   cp ${BASE_DIR}etc/kibana/kibana.yml ${BASE_DIR}app/kibana/config/kibana.yml
 }
 
@@ -249,8 +262,9 @@ function install_grafana()
   tar zxvf ${BASE_DIR}script/download/grafana.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/grafana-6.6.2 ${BASE_DIR}app/grafana
   # edit grafana supervisor config
-  sed -i "s/\/home\/search\/grafana-6.6.2/${BASE_DIR}app\/grafana/g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
-  cp ${BASE_DIR}etc/grafana/default.ini ${BASE_DIR}app/grafana/conf/default.ini
+  sed -i "s?\/home\/search\/grafana-6.6.2?${BASE_DIR}app\/grafana?g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
+  mkdir ${BASE_DIR}app/grafana/conf
+  cp ${BASE_DIR}etc/grafana/defaults.ini ${BASE_DIR}app/grafana/conf/defaults.ini
 }
 
 install_pyenv
@@ -258,7 +272,7 @@ install_python3
 install_master_requirements
 install_pyrfc
 install_consul
-intall_mysql
+install_mysql
 create_mysql_db_sapspa
 start_backend
 start_admin
@@ -270,15 +284,16 @@ install_grafana
 
 # install supervisord
 echo "install supervisord"
-pip install supervisor
+pip3 install supervisor
 cp -Rf ${BASE_DIR}etc/supervisord /etc/
 mkdir /var/run/supervisor
+mkdir /var/log/supervisor
 # start supervisord
 echo "start supervisord"
 kill -9 $(ps -ef|grep supervisord|awk '{print $2}')
-supervisorctl -c /etc/supervisord/supervisord.conf
-supervisorctl reload
-supervisorctl start all
-supervisorctl restart all
+supervisord -c /etc/supervisord/supervisord.conf
+supervisorctl -c /etc/supervisord/supervisord.conf reload
+supervisorctl -c /etc/supervisord/supervisord.conf start all
+supervisorctl -c /etc/supervisord/supervisord.conf restart all
 echo "start master done"
 
