@@ -82,7 +82,7 @@ function install_pyenv()
             echo "download pyenv"
             wget https://github.com/pyenv/pyenv/archive/v${PYENV_VERSION}.tar.gz -O ${BASE_DIR}script/download/pyenv.tar.gz
             echo "install pyenv"
-            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz ${BASE_DIR}script/download/
+            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz -C ${BASE_DIR}script/download/
             mv ${BASE_DIR}script/download/pyenv-${PYENV_VERSION} ~/.pyenv
             echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
             echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
@@ -157,7 +157,7 @@ function install_node_exporter()
   # download node_exporter
   echo "download node_exporter"
   wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/node_exporter.tar.gz
-  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz /usr/local/bin
+  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz -C /usr/local/bin
   # start node_exporter
   echo "start node_exporter"
   nohup node_exporter --web.listen-address=":23311" &
@@ -167,7 +167,7 @@ function install_filebeat()
 {
   # download ELK filebeat
   wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${CONSUL_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
-  tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/filebeat-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/filebeat
   # start filebeat
   sed -i "s/localhost:23392/${MASTER_IP}:23392/g" ${BASE_DIR}etc/filebeat/filebeat.yml

@@ -84,7 +84,7 @@ function install_pyenv()
             echo "download pyenv"
             wget https://github.com/pyenv/pyenv/archive/v${PYENV_VERSION}.tar.gz -O ${BASE_DIR}script/download/pyenv.tar.gz
             echo "install pyenv"
-            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz ${BASE_DIR}script/download/
+            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz -C ${BASE_DIR}script/download/
             mv ${BASE_DIR}script/download/pyenv-${PYENV_VERSION} ~/.pyenv
             echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
             echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
@@ -178,7 +178,7 @@ function start_admin()
   echo "download node"
   wget https://nodejs.org/dist/v12.16.1/node-v${NODE_VERSION}-linux-x64.tar.xz  -O ${BASE_DIR}script/download/node.tar.xz
   xz -d ${BASE_DIR}script/download/node.tar.xz
-  tar xvf ${BASE_DIR}script/download/node.tar ${BASE_DIR}script/download/
+  tar xvf ${BASE_DIR}script/download/node.tar -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/node-v${NODE_VERSION}-linux-x64 ${BASE_DIR}app/node
   echo 'export NODEJS_HOME="${BASE_DIR}app/node"' >> ~/.bash_profile
   echo 'export PATH="$PATH:${NODEJS_HOME}/bin:node_modules/.bin"' >> ~/.bash_profile
@@ -190,7 +190,7 @@ function start_admin()
   npm run build:prod
   echo "download caddy http server"
   wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O ${BASE_DIR}script/download/caddy_linux_amd64.tar.xz
-  tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/caddy_linux_amd64.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/caddy /usr/local/bin
   echo "start caddy"
   sed -i "s/\/sapspa\/src\/admin\/dist//${BASE_DIR}src\/admin\/dist/g" ${BASE_DIR}etc/caddy/Caddyfile
@@ -202,7 +202,7 @@ function install_prometheus()
   #download prometheus
   echo "download prometheus"
   wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/prometheus.tar.gz
-  tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/prometheus.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/prometheus-${PROMETHEUS_VERSION}.linux-amd64 ${BASE_DIR}app/prometheus
   #start prometheus
   echo "start prometheus"
@@ -222,7 +222,7 @@ function install_elasticsearch()
   # download ELK elasticsearch
   echo "download ELK elasticsearch"
   wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
-  tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/elasticsearch
   # edit elasticsearch supervisor config
   sed -i "s/\/home\/search\/elasticsearch-7.4.2/${BASE_DIR}app\/elasticsearch/g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
@@ -234,7 +234,7 @@ function install_kibana()
   # download ELK kibana
   echo "download ELK kibana"
   wget https://artifacts.elastic.co/downloads/kibana/kibana-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/kibana.tar.gz
-  tar zxvf ${BASE_DIR}script/download/kibana.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/kibana.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
   # edit kibana supervisor config
   sed -i "s/\/home\/search\/kibana-7.4.2-linux-x86_64/${BASE_DIR}app\/kibana/g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
@@ -246,7 +246,7 @@ function install_grafana()
   # download ELK grafana
   echo "download ELK grafana"
   wget https://dl.grafana.com/oss/release/grafana-6.6.2.linux-amd64.tar.gz  -O ${BASE_DIR}script/download/grafana.tar.gz
-  tar zxvf ${BASE_DIR}script/download/grafana.tar.gz ${BASE_DIR}script/download/
+  tar zxvf ${BASE_DIR}script/download/grafana.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/grafana-6.6.2 ${BASE_DIR}app/grafana
   # edit grafana supervisor config
   sed -i "s/\/home\/search\/grafana-6.6.2/${BASE_DIR}app\/grafana/g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
