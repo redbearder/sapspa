@@ -170,7 +170,7 @@ function install_node_exporter()
   echo "download node_exporter"
   wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/node_exporter.tar.gz
   tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz -C ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64/bin/node_exporter /usr/local/bin
+  mv ${BASE_DIR}script/download/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64/node_exporter /usr/local/bin
   # start node_exporter
   echo "start node_exporter"
   nohup node_exporter --web.listen-address=":23311" >/dev/null 2>&1 &
