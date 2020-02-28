@@ -284,6 +284,7 @@ install_grafana
 
 # install supervisord
 echo "install supervisord"
+pyenv local ${PYTHON_VERSION}
 pip3 install supervisor
 cp -Rf ${BASE_DIR}etc/supervisord /etc/
 mkdir /var/run/supervisor

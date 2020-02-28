@@ -158,7 +158,9 @@ function install_consul()
 function install_sapspa_agent()
 {
   # start sapspa_agent.py
+  pyenv local ${PYTHON_VERSION}
   echo "start sapspa_agent.py"
+  pip3 install uwsgi
   uwsgi --http 0.0.0.0:23310 --wsgi-file ${BASE_DIR}src/agent/sapspa_agent.py --callable app_dispatch --daemonize /var/log/uwsgi_sapspa_agent.log
 }
 
@@ -167,7 +169,8 @@ function install_node_exporter()
   # download node_exporter
   echo "download node_exporter"
   wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/node_exporter.tar.gz
-  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz -C /usr/local/bin
+  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz -C ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64/bin/node_exporter /usr/local/bin
   # start node_exporter
   echo "start node_exporter"
   nohup node_exporter --web.listen-address=":23311" >/dev/null 2>&1 &
@@ -176,7 +179,7 @@ function install_node_exporter()
 function install_filebeat()
 {
   # download ELK filebeat
-  wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${CONSUL_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
+  wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
   tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/filebeat-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/filebeat
   # start filebeat
