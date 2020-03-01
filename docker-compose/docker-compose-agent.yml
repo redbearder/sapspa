@@ -1,0 +1,40 @@
+##################################################################
+#              Docker Compose file that starts sapspa master               #
+##################################################################
+version: '3.5'
+
+services:
+  consul:
+    image: consul
+    network_mode: "host"
+    ports:
+      - 23340
+      - 23342
+      - 23341
+      - 23346
+      - 23345
+    command: consul agent -bootstrap -data-dir=consuldata -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342
+
+  node_exporter:
+    image: node_exporter
+    network_mode: "host"
+    ports:
+      - 23311
+    command: bin/elasticsearch
+    volumes:
+      - ../etc/elasticsearch:/usr/share/elasticsearch/config
+
+  agent:
+    build: ../src/agent
+    restart: "yes"
+    network_mode: "host"
+    depends_on:
+      - consul
+    ports:
+      - 23310
+    expose:
+      - 23310
+    command: 
+      uwsgi --http 0.0.0.0:23310 --wsgi-file sapspa_agent.py --callable app_dispatch
+    volumes:
+      - ../src/agent:/opt/agent

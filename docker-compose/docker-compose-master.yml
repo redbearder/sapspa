@@ -1,0 +1,94 @@
+##################################################################
+#              Docker Compose file that starts sapspa master               #
+##################################################################
+version: '3.5'
+
+services:
+  consul:
+    image: consul
+    network_mode: "host"
+    ports:
+      - 23340
+      - 23342
+      - 23341
+      - 23346
+      - 23345
+    command: consul agent -bootstrap -data-dir=consuldata -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342
+
+  elasticsearch:
+    image: elasticsearch:7.4.2
+    network_mode: "host"
+    ports:
+      - 23392
+      - 23393
+    command: bin/elasticsearch
+    volumes:
+      - ../etc/elasticsearch:/usr/share/elasticsearch/config
+
+  kibana:
+    image: kibana:7.4.2
+    network_mode: "host"
+    ports:
+      - 23356
+    command: bin/kibana
+    volumes:
+      - ../etc/kibana:/usr/share/kibana/config
+
+  prometheus:
+    image: prom/prometheus
+    network_mode: "host"
+    ports:
+      - 23390
+    command: bin/prometheus --web.listen-address="0.0.0.0:23390"
+    volumes:
+        - ../etc/grafana:/usr/share/grafana/conf
+        -
+  grafana:
+    image: grafana:6.6.2
+    network_mode: "host"
+    ports:
+      - 23330
+    command: bin/grafana
+    volumes:
+      - ../etc/grafana:/usr/share/grafana/conf
+
+  mysql:
+    image: mysql:5.7
+    network_mode: "host"
+    ports:
+      - 3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=sapspa
+
+  backend:
+    build: ../src/backend
+    restart: "yes"
+    network_mode: "host"
+    depends_on:
+      - mysql
+      - consul
+      - elasticsearch
+    ports:
+      - 23381
+    expose:
+      - 23381
+    command: 
+      gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app --daemon
+    volumes:
+      - ../src/backend:/opt/backend
+
+  admin:
+    build: ../src/admin
+    restart: "yes"
+    network_mode: "host"
+    depends_on:
+      - backend
+    ports:
+      - 23380
+    expose:
+      - 23380
+    command:
+      caddy
+    volumes:
+      - ../src/admin:/opt/admin

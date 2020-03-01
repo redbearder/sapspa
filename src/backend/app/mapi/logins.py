@@ -1,7 +1,7 @@
 from flask import abort, g, jsonify, request, url_for
 from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required
-from app import db
+from app import db, Config
 from app.utils import bad_request, normal_request, query_request
 from app.models import LoginModel, LoginSchema
 from app.models import SubappModel, SubappSchema
@@ -32,7 +32,9 @@ class Logins(Resource):
         db.session.commit()
 
         subapp = SubappModel.query.get(subappid)
-        c = consul.Consul()
+        c = consul.Consul(host='127.0.0.1',
+                          port=Config.CONSUL_CLIENT_PORT,
+                          scheme='http')
         c.kv.put(
             subapp['subappsid'] + '_login',
             json.dumps({
@@ -57,7 +59,9 @@ class Login(Resource):
         db.session.commit()
 
         subapp = SubappModel.query.get(subappid)
-        c = consul.Consul()
+        c = consul.Consul(host='127.0.0.1',
+                          port=Config.CONSUL_CLIENT_PORT,
+                          scheme='http')
         c.kv.put(
             subapp['subappsid'] + '_login',
             json.dumps({

@@ -1,23 +1,18 @@
-FROM python:3.6-alpine
+FROM python:3.7.5-alpine
 
-RUN adduser -D microblog
+WORKDIR /opt/backend
 
-WORKDIR /home/microblog
-
-COPY requirements.txt requirements.txt
 RUN python -m venv venv
 RUN venv/bin/pip install -r requirements.txt
 RUN venv/bin/pip install gunicorn pymysql
+RUN flask db gunicorn
+RUN flask db init
+RUN flask db migrate
+RUN flask db upgrade
 
-COPY app app
-COPY migrations migrations
-COPY sapspa.py config.py boot.sh ./
-RUN chmod a+x boot.sh
+ENV FLASK_APP sapspa.py
 
-ENV FLASK_APP microblog.py
+EXPOSE 23381
 
-RUN chown -R microblog:microblog ./
-USER microblog
 
-EXPOSE 5000
-ENTRYPOINT ["./boot.sh"]
+

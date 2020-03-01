@@ -1,7 +1,6 @@
 from flask import abort, g, jsonify, request, url_for
 from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required
-import consul
 
 from app import db
 from app.utils import bad_request, normal_request, query_request

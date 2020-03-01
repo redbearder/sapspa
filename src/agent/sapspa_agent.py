@@ -323,7 +323,7 @@ class SAPCollector(object):
         # get SID list from os dir
         sidList = get_sid_list()
         for sid in sidList:
-            c = consul.Consul()
+            c = consul.Consul(host='127.0.0.1', port=23345, scheme='http')
             kvid, kvv = c.kv.get(sid + '_login')
             if kvv:
                 # get SID login info from consul
@@ -491,7 +491,7 @@ class SAPCollector(object):
         # yield i
 
 
-c = consul.Consul()
+c = consul.Consul(host='127.0.0.1', port=23345, scheme='http')
 hostname = socket.gethostname()
 ip = socket.gethostbyname(hostname)
 c.agent.service.register(name=hostname + '_agent',
