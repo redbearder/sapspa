@@ -11,7 +11,6 @@ BASENAME=$(basename $0)
 PYTHON_VERSION=3.7.5
 PYENV_VERSION=1.2.16
 CONSUL_VERSION=1.7.1
-MASTER_IP=139.9.180.161
 NODE_EXPORTER_VERSION=0.18.1
 ELK_VERSION=7.4.2
 
@@ -160,6 +159,7 @@ function install_sapspa_agent()
   # start sapspa_agent.py
   pyenv local ${PYTHON_VERSION}
   echo "start sapspa_agent.py"
+  sed -i "s?{master_ip}?${MASTER_IP}?g" ${BASE_DIR}src/agent/sapspa_agent.py
   pip3 install uwsgi
   uwsgi --http 0.0.0.0:23310 --wsgi-file ${BASE_DIR}src/agent/sapspa_agent.py --callable app_dispatch --daemonize /var/log/uwsgi_sapspa_agent.log
 }

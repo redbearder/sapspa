@@ -10,7 +10,6 @@ BASENAME=$(basename $0)
 PYTHON_VERSION=3.7.5
 PYENV_VERSION=1.2.16
 CONSUL_VERSION=1.7.1
-MASTER_IP=139.9.180.161
 NODE_EXPORTER_VERSION=0.18.1
 ELK_VERSION=7.4.2
 PROMETHEUS_VERSION=2.16.0
@@ -151,7 +150,7 @@ function install_consul()
   # start consul
   # kill all consul process and restart as master
   kill -9 $(ps -ef|grep consul|awk '{print $2}')
-  nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 >/dev/null 2>&1 &
+  nohup consul agent -bootstrap -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=${MASTER_IP} -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342 >/dev/null 2>&1 &
 }
 
 function install_mysql()

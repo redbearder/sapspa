@@ -546,14 +546,9 @@ for sid in sidList:
 post_dict = {"host": get_host_info(), "app": subapp_list}
 print(post_dict)
 
-kvid, kvv = c.kv.get('sapspa_master')
-if kvv:
-    master_value_dict = json.loads(kvv['Value'])
-    master_ip = master_value_dict['ip']
-
-    requests.post(f'http://{master_ip}:23381/api/v1/agents',
-                  data=post_dict,
-                  headers={'content-type': 'application/json'})
+requests.post(f'http://{master_ip}:23381/api/v1/agents',
+              data=post_dict,
+              headers={'content-type': 'application/json'})
 
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests
