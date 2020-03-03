@@ -10,4 +10,7 @@ while true; do
     sleep 5
 done
 flask translate compile
-exec gunicorn -b :22381 --access-logfile - --error-logfile - sapspa:app
+venv/bin/flask db init
+venv/bin/flask db migrate
+venv/bin/flask db upgrade
+exec venv/bin/gunicorn -b :22381 --access-logfile - --error-logfile - sapspa:app

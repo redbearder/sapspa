@@ -165,7 +165,9 @@ function install_mysql()
 function create_mysql_db_sapspa()
 {
   # create_mysql_db_sapspa
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS sapspa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS sapspa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \\
+    use sapspa; \\
+    INSERT INTO \`user\` (\`uid\`, \`username\`, \`password\`, \`userdomain\`, \`createdAt\`, \`updatedAt\`) VALUES (1, 'admin', 'admin', 'xxx.com', '2019-10-14 12:12:02', '2019-10-14 12:12:02');"
   sed -i "s?root\@localhost?root\:${MYSQL_ROOT_PASSWORD}\@localhost?g" ${BASE_DIR}src/backend/.env
   cd ${BASE_DIR}src/backend/
   pyenv local ${PYTHON_VERSION}
@@ -197,6 +199,7 @@ function start_admin()
   source ~/.bash_profile
   npm install -g yarn
   cd ${BASE_DIR}src/admin
+  sed -i "s?localhost?${MASTER_IP}?g" ${BASE_DIR}src/admin/.env.production
   echo "install node module"
   yarn
   npm run build:prod
@@ -235,10 +238,11 @@ function install_elasticsearch()
   echo "download ELK elasticsearch"
   wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/elasticsearch.tar.gz
   tar zxvf ${BASE_DIR}script/download/elasticsearch.tar.gz -C ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION} ${BASE_DIR}app/elasticsearch
+  mv ${BASE_DIR}script/download/elasticsearch-${ELK_VERSION} /home/search/elasticsearch
+  chown -R search /home/search/elasticsearch
   # edit elasticsearch supervisor config
   sed -i "s?\/home\/search\/elasticsearch-7.4.2?${BASE_DIR}app\/elasticsearch?g" ${BASE_DIR}etc/supervisord/supervisord.d/es.ini
-  cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml ${BASE_DIR}app/elasticsearch/config/elasticsearch.yml
+  cp ${BASE_DIR}etc/elasticsearch/elasticsearch.yml /home/search/elasticsearch/config/elasticsearch.yml
 }
 
 function install_kibana()
@@ -247,10 +251,11 @@ function install_kibana()
   echo "download ELK kibana"
   wget https://artifacts.elastic.co/downloads/kibana/kibana-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/kibana.tar.gz
   tar zxvf ${BASE_DIR}script/download/kibana.tar.gz -C ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/kibana
+  mv ${BASE_DIR}script/download/kibana-${ELK_VERSION}-linux-x86_64 /home/search/kibana
+  chown -R search ${BASE_DIR}app/kibana
   # edit kibana supervisor config
   sed -i "s?\/home\/search\/kibana-7.4.2-linux-x86_64?${BASE_DIR}app\/kibana?g" ${BASE_DIR}etc/supervisord/supervisord.d/kibana.ini
-  cp ${BASE_DIR}etc/kibana/kibana.yml ${BASE_DIR}app/kibana/config/kibana.yml
+  cp ${BASE_DIR}etc/kibana/kibana.yml /home/search/kibana/config/kibana.yml
 }
 
 function install_grafana()
@@ -263,7 +268,7 @@ function install_grafana()
   # edit grafana supervisor config
   sed -i "s?\/home\/search\/grafana-6.6.2?${BASE_DIR}app\/grafana?g" ${BASE_DIR}etc/supervisord/supervisord.d/grafana.ini
   mkdir ${BASE_DIR}app/grafana/conf
-  cp ${BASE_DIR}etc/grafana/defaults.ini ${BASE_DIR}app/grafana/conf/defaults.ini
+  cp ${BASE_DIR}etc/grafana/* ${BASE_DIR}app/grafana/
 }
 
 install_pyenv
@@ -291,6 +296,7 @@ mkdir /var/log/supervisor
 # start supervisord
 echo "start supervisord"
 kill -9 $(ps -ef|grep supervisord|awk '{print $2}')
+ulimit -n 65535
 supervisord -c /etc/supervisord/supervisord.conf
 supervisorctl -c /etc/supervisord/supervisord.conf reload
 supervisorctl -c /etc/supervisord/supervisord.conf start all
