@@ -165,9 +165,8 @@ function install_mysql()
 function create_mysql_db_sapspa()
 {
   # create_mysql_db_sapspa
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS sapspa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \\
-    use sapspa; \\
-    INSERT INTO \`user\` (\`uid\`, \`username\`, \`password\`, \`userdomain\`, \`createdAt\`, \`updatedAt\`) VALUES (1, 'admin', 'admin', 'xxx.com', '2019-10-14 12:12:02', '2019-10-14 12:12:02');"
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS sapspa DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  # INSERT INTO \`user\` (\`uid\`, \`username\`, \`password\`, \`userdomain\`, \`createdAt\`, \`updatedAt\`) VALUES (1, 'admin', 'admin', 'xxx.com', '2019-10-14 12:12:02', '2019-10-14 12:12:02');
   sed -i "s?root\@localhost?root\:${MYSQL_ROOT_PASSWORD}\@localhost?g" ${BASE_DIR}src/backend/.env
   cd ${BASE_DIR}src/backend/
   pyenv local ${PYTHON_VERSION}
@@ -222,6 +221,7 @@ function install_prometheus()
   #start prometheus
   echo "start prometheus"
   cp ${BASE_DIR}etc/prometheus/prometheus.yml ${BASE_DIR}app/prometheus/prometheus.yml
+  sed -i "s?consul:23345?localhost:23345?g" ${BASE_DIR}app/prometheus/prometheus.yml
   nohup ${BASE_DIR}app/prometheus/prometheus --web.listen-address="0.0.0.0:23390" >/dev/null 2>&1 &
 }
 

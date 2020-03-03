@@ -7,6 +7,7 @@ from app.models import LoginModel, LoginSchema
 from app.models import SubappModel, SubappSchema
 import consul
 import json
+import os
 
 login_schema = LoginSchema()
 logins_schema = LoginSchema(many=True)
@@ -34,7 +35,8 @@ class Logins(Resource):
 
         subapp_m = SubappModel.query.get(subappid)
         subapp = subapp_schema.dump(subapp_m)
-        c = consul.Consul(host='127.0.0.1',
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
                           port=Config.CONSUL_CLIENT_PORT,
                           scheme='http')
         c.kv.put(
@@ -62,7 +64,8 @@ class Login(Resource):
 
         subapp_m = SubappModel.query.get(subappid)
         subapp = subapp_schema.dump(subapp_m)
-        c = consul.Consul(host='127.0.0.1',
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
                           port=Config.CONSUL_CLIENT_PORT,
                           scheme='http')
         c.kv.put(

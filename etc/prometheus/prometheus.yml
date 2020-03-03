@@ -34,5 +34,5 @@ scrape_configs:
     # scheme defaults to 'http'.
 
     consul_sd_configs: 
-    - server: "localhost:23345"
+    - server: "consul:23345"
       tags: ['sapspa']

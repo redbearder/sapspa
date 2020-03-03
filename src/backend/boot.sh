@@ -2,8 +2,8 @@
 # this script is used to boot a Docker container
 source venv/bin/activate
 while true; do
-    flask db upgrade
-    if [[ "$?" == "0" ]]; then
+    venv/bin/flask db upgrade
+    if [ "$?" = "0" ]; then
         break
     fi
     echo Deploy command failed, retrying in 5 secs...

@@ -128,7 +128,7 @@ def get_instance_servername_list_by_sid(sid):
                 arr = l.split('_')
                 i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
                 p['servername'] = i
-                diaServernameList.append(i)
+                diaServernameList.append(p)
                 pass
     return diaServernameList
 
@@ -323,7 +323,10 @@ class SAPCollector(object):
         # get SID list from os dir
         sidList = get_sid_list()
         for sid in sidList:
-            c = consul.Consul(host='127.0.0.1', port=23345, scheme='http')
+            c = consul.Consul(host=os.environ.get('CONSUL_HOST') if
+                              os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                              port=23345,
+                              scheme='http')
             kvid, kvv = c.kv.get(sid + '_login')
             if kvv:
                 # get SID login info from consul
@@ -364,8 +367,10 @@ class SAPCollector(object):
                     pass
 
                 if conn:
-                    for servername in get_instance_servername_list_by_sid(sid):
+                    for p in get_instance_servername_list_by_sid(sid):
                         # master identification
+                        servername = p['servername']
+                        profile = p['profile']
                         kvid_master, kvv_master = c.kv.get(sid + '_master')
                         if kvv_master:
                             kvvDict_master = json.loads(kvv_master['Value'])
@@ -456,11 +461,11 @@ class SAPCollector(object):
                             "WorkprocessCount",
                             'WorkprocessCount of One Instance in SID group by Type',
                             labels=['SID', 'Instance', 'WorkprocessType'])
-                        g_wpcount.add_metric([sid, servername, 'DIA'],
+                        g_wpcount.add_metric([sid, profile, 'DIA'],
                                              running_dia_count)
-                        g_wpcount.add_metric([sid, servername, 'BTC'],
+                        g_wpcount.add_metric([sid, profile, 'BTC'],
                                              running_btc_count)
-                        g_wpcount.add_metric([sid, servername, 'UPD'],
+                        g_wpcount.add_metric([sid, profile, 'UPD'],
                                              running_upd_count)
                         yield g_wpcount
 
@@ -491,7 +496,10 @@ class SAPCollector(object):
         # yield i
 
 
-c = consul.Consul(host='127.0.0.1', port=23345, scheme='http')
+c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                  if os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                  port=23345,
+                  scheme='http')
 hostname = socket.gethostname()
 ip = socket.gethostbyname(hostname)
 c.agent.service.register(name=hostname + '_agent',
