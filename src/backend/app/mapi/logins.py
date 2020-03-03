@@ -10,6 +10,7 @@ import json
 
 login_schema = LoginSchema()
 logins_schema = LoginSchema(many=True)
+subapp_schema = SubappSchema()
 
 
 class Logins(Resource):
@@ -31,7 +32,8 @@ class Logins(Resource):
         db.session.add(login)
         db.session.commit()
 
-        subapp = SubappModel.query.get(subappid)
+        subapp_m = SubappModel.query.get(subappid)
+        subapp = subapp_schema.dump(subapp_m)
         c = consul.Consul(host='127.0.0.1',
                           port=Config.CONSUL_CLIENT_PORT,
                           scheme='http')
@@ -58,7 +60,8 @@ class Login(Resource):
         app = LoginModel.query.filter_by(loginid=loginid).update(data)
         db.session.commit()
 
-        subapp = SubappModel.query.get(subappid)
+        subapp_m = SubappModel.query.get(subappid)
+        subapp = subapp_schema.dump(subapp_m)
         c = consul.Consul(host='127.0.0.1',
                           port=Config.CONSUL_CLIENT_PORT,
                           scheme='http')

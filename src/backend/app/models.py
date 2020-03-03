@@ -85,7 +85,7 @@ class SubappModel(db.Model):
                           nullable=False,
                           index=True,
                           comment='subapp SID')
-    subappurl = db.Column(db.String(100), nullable=False, comment='subapp url')
+    subappurl = db.Column(db.String(100), nullable=True, comment='subapp url')
     subappdesc = db.Column(db.String(100),
                            nullable=True,
                            comment='subapp description')
@@ -109,12 +109,12 @@ class HostModel(db.Model):
                          index=True,
                          comment='hostname')
     hostdomain = db.Column(db.String(100),
-                           nullable=False,
+                           nullable=True,
                            comment='host domain name')
     ipaddress = db.Column(db.String(255), nullable=False, comment='ip address')
     cpu = db.Column(db.Integer, nullable=False, comment='cpu')
     memory = db.Column(db.BigInteger, nullable=False, comment='memory')
-    fsmount = db.Column(db.TEXT, nullable=False, comment='file system mount')
+    fsmount = db.Column(db.TEXT, nullable=True, comment='file system mount')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),
                           comment='host create datetime')

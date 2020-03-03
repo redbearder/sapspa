@@ -546,9 +546,10 @@ for sid in sidList:
 post_dict = {"host": get_host_info(), "app": subapp_list}
 print(post_dict)
 
-requests.post(f'http://{master_ip}:23381/api/v1/agents',
-              data=post_dict,
-              headers={'content-type': 'application/json'})
+r = requests.post(f'http://{master_ip}:23381/api/v1/agents',
+                  data=json.dumps(post_dict),
+                  headers={'Content-Type': 'application/json'})
+print(r.text)
 
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests
