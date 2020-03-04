@@ -6,11 +6,11 @@
 
 __VERSION__=0.1.0
 BASE_DIR="$(dirname "$0")"/../
+BASE_DIR=`pwd`/$BASE_DIR
 BASENAME=$(basename $0)
 PYTHON_VERSION=3.7.5
 PYENV_VERSION=1.2.16
 CONSUL_VERSION=1.7.1
-MASTER_IP=139.9.180.161
 NODE_EXPORTER_VERSION=0.18.1
 ELK_VERSION=7.4.2
 
@@ -82,36 +82,45 @@ function install_pyenv()
             echo "download pyenv"
             wget https://github.com/pyenv/pyenv/archive/v${PYENV_VERSION}.tar.gz -O ${BASE_DIR}script/download/pyenv.tar.gz
             echo "install pyenv"
-            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz ${BASE_DIR}script/download/
+            tar zxvf ${BASE_DIR}script/download/pyenv.tar.gz -C ${BASE_DIR}script/download/
             mv ${BASE_DIR}script/download/pyenv-${PYENV_VERSION} ~/.pyenv
             echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
             echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bash_profile
             echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> ~/.bash_profile
-            exec "$SHELL"
+            source ~/.bash_profile
         fi
 }
 
 function install_python3()
 {
-        if command -v python3 1> /dev/null 2>&1; then
+        # sudo apt-get update
+        # sudo apt-get upgrade
+        # sudo apt-get dist-upgrade
+        # sudo apt-get install build-essential python-dev python-setuptools python-pip python-smbus
+        # sudo apt-get install build-essential libncursesw5-dev libgdbm-dev libc6-dev
+        # sudo apt-get install zlib1g-dev libsqlite3-dev tk-dev
+        # sudo apt-get install libssl-dev openssl
+        # sudo apt-get install libffi-dev
+        if command -v python3.7 1> /dev/null 2>&1; then
             echo "python3 already exist"
+            pyenv local ${PYTHON_VERSION}
         else
             # install python3.7.5 via pyenv
             mkdir ~/.pyenv/sources
             mkdir ~/.pyenv/sources/${PYTHON_VERSION}
-            echo "download Python "$PYTHON_VERSION
-            wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
+#            echo "download Python "$PYTHON_VERSION
+#            wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz ~/.pyenv/sources/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz
             echo "install Python "${PYTHON_VERSION}
-            pyenv install ${PYTHON_VERSION}
+            pyenv install -k ${PYTHON_VERSION}
             pyenv local ${PYTHON_VERSION}
         fi
 }
 
 function install_agent_requirements()
 {
-  # pip install -r requirements.txt
+  # pip3 install -r requirements.txt
   echo "Install Python requirements"
-  pip install -r ${BASE_DIR}src/agent/requirements.txt
+  pip3 install -r ${BASE_DIR}src/agent/requirements.txt
 }
 
 
@@ -127,7 +136,7 @@ function install_pyrfc()
   ldconfig
   # install pyrfc module
   echo "install pyrfc module"
-  pip install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
+  pip3 install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
 }
 
 function install_consul()
@@ -141,14 +150,17 @@ function install_consul()
   count=`ps -ef |grep consul |grep -v "grep" |wc -l`
   if [ 0 == $count ];then
         echo "start consul"
-        nohup consul agent -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -join=${MASTER_IP} -dns-port=23346 -http-port=23345 -retry-join "[::1]:23341" -serf-wan-port=23342 &
+        nohup consul agent -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -join=${MASTER_IP} -dns-port=23346 -http-port=23345 -retry-join "[::1]:23341" -serf-wan-port=23342 >/dev/null 2>&1 &
   fi
 }
 
 function install_sapspa_agent()
 {
   # start sapspa_agent.py
+  pyenv local ${PYTHON_VERSION}
   echo "start sapspa_agent.py"
+  sed -i "s?{master_ip}?${MASTER_IP}?g" ${BASE_DIR}src/agent/sapspa_agent.py
+  pip3 install uwsgi
   uwsgi --http 0.0.0.0:23310 --wsgi-file ${BASE_DIR}src/agent/sapspa_agent.py --callable app_dispatch --daemonize /var/log/uwsgi_sapspa_agent.log
 }
 
@@ -157,21 +169,24 @@ function install_node_exporter()
   # download node_exporter
   echo "download node_exporter"
   wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz -O ${BASE_DIR}script/download/node_exporter.tar.gz
-  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz /usr/local/bin
+  tar zxvf ${BASE_DIR}script/download/node_exporter.tar.gz -C ${BASE_DIR}script/download/
+  mv ${BASE_DIR}script/download/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64/node_exporter /usr/local/bin
   # start node_exporter
   echo "start node_exporter"
-  nohup node_exporter --web.listen-address=":23311" &
+  nohup node_exporter --web.listen-address=":23311" >/dev/null 2>&1 &
 }
 
 function install_filebeat()
 {
   # download ELK filebeat
-  wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${CONSUL_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
-  tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz ${BASE_DIR}script/download/
+  wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
+  tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz -C ${BASE_DIR}script/download/
   mv ${BASE_DIR}script/download/filebeat-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/filebeat
   # start filebeat
-  sed -i "s/localhost:23392/${MASTER_IP}:23392/g" ${BASE_DIR}etc/filebeat/filebeat.yml
-  nohup ${BASE_DIR}app/filebeat/filebeat -c ${BASE_DIR}etc/filebeat/filebeat.yml &
+  sed -i "s?localhost:23392?${MASTER_IP}:23392?g" ${BASE_DIR}etc/filebeat/filebeat.yml
+#  sed -i 's?index: "filebeat?index: "'`hostname`'-filebeat?g' ${BASE_DIR}etc/filebeat/filebeat.yml
+  cp -Rf ${BASE_DIR}etc/filebeat /etc/
+  nohup ${BASE_DIR}app/filebeat/filebeat -c ${BASE_DIR}etc/filebeat/filebeat.yml >/dev/null 2>&1 &
 }
 
 install_pyenv

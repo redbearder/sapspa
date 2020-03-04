@@ -1,15 +1,17 @@
 from flask import abort, g, jsonify, request, url_for
 from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required
-from app import db
+from app import db, Config
 from app.utils import bad_request, normal_request, query_request
 from app.models import LoginModel, LoginSchema
 from app.models import SubappModel, SubappSchema
 import consul
 import json
+import os
 
 login_schema = LoginSchema()
 logins_schema = LoginSchema(many=True)
+subapp_schema = SubappSchema()
 
 
 class Logins(Resource):
@@ -31,8 +33,12 @@ class Logins(Resource):
         db.session.add(login)
         db.session.commit()
 
-        subapp = SubappModel.query.get(subappid)
-        c = consul.Consul()
+        subapp_m = SubappModel.query.get(subappid)
+        subapp = subapp_schema.dump(subapp_m)
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                          port=Config.CONSUL_CLIENT_PORT,
+                          scheme='http')
         c.kv.put(
             subapp['subappsid'] + '_login',
             json.dumps({
@@ -56,8 +62,12 @@ class Login(Resource):
         app = LoginModel.query.filter_by(loginid=loginid).update(data)
         db.session.commit()
 
-        subapp = SubappModel.query.get(subappid)
-        c = consul.Consul()
+        subapp_m = SubappModel.query.get(subappid)
+        subapp = subapp_schema.dump(subapp_m)
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                          port=Config.CONSUL_CLIENT_PORT,
+                          scheme='http')
         c.kv.put(
             subapp['subappsid'] + '_login',
             json.dumps({

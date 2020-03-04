@@ -1,0 +1,56 @@
+##################################################################
+#              Docker Compose file that starts sapspa master               #
+##################################################################
+version: '3.5'
+
+# MASTER_IP=192.168.50.210
+
+services:
+  consul:
+    image: consul:1.7.1
+    ports:
+      - 23340:23340
+      - 23342:23342
+      - 23341:23341
+      - 23346:23346
+      - 23345:23345
+    command:
+      consul agent -data-dir=/consul/data -ui -client=0.0.0.0 -bind=0.0.0.0 -join=192.168.50.210:23341 -dns-port=23346 -http-port=23345 -retry-join "[::1]:23341" -serf-lan-port=23341 -serf-wan-port=23342
+
+  node_exporter:
+    image: prom/node-exporter
+    ports:
+      - 23311:23311
+    command:
+      --web.listen-address=":23311"
+
+  agent:
+    build:
+      context: ../src/agent
+      args:
+        - MASTER_IP=192.168.50.210
+    restart: always
+    links:
+      - consul
+    depends_on:
+      - consul
+    environment:
+      - CONSUL_HOST=consul
+    ports:
+      - 23310:23310
+    expose:
+      - 23310
+    command:
+      venv/bin/uwsgi --http 0.0.0.0:23310 --wsgi-file sapspa_agent.py --callable app_dispatch
+    volumes:
+      - /usr/sap:/usr/sap
+      - /sapmnt:/sapmnt
+
+  filebeat:
+    image: elastic/filebeat:7.4.2
+    command:
+      /usr/share/filebeat/filebeat -E "output.elasticsearch.hosts=['http://192.168.50.210:23392']" -c /etc/filebeat/filebeat.yml
+    volumes:
+      - ../etc/filebeat:/etc/filebeat
+      - /usr/sap:/usr/sap
+      - /sapmnt:/sapmnt

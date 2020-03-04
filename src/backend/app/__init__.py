@@ -8,6 +8,7 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_jwt_extended import (JWTManager, jwt_required, create_access_token,
                                 get_jwt_identity)
+from flask_cors import CORS, cross_origin
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
@@ -27,6 +28,14 @@ mail = Mail()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    # CORS(app,
+    #      origins="*",
+    #      allow_headers=[
+    #          "Content-Type", "Authorization",
+    #          "Access-Control-Allow-Credentials"
+    #      ],
+    #      supports_credentials=True)
+    CORS(app, origins="*", supports_credentials=True)
     app.config.from_object(config_class)
 
     db.init_app(app)
@@ -85,6 +94,8 @@ def create_app(config_class=Config):
 
         app.logger.setLevel(logging.INFO)
         app.logger.info('sapspa startup')
+
+        logging.getLogger('flask_cors').level = logging.DEBUG
 
     return app
 

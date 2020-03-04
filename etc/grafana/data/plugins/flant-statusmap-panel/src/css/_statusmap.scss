@@ -1,0 +1,110 @@
+.status-heatmap-canvas-wrapper {
+  // position: relative;
+  cursor: crosshair;
+
+  // allow tooltips on hover of warning text
+  .datapoints-warning {
+    pointer-events: none;
+  }
+
+  .datapoints-warning span {
+  background-color: $warning-bg;
+  color: $text-color;
+  padding: 1px;
+  }
+}
+
+.status-heatmap-panel {
+  position: relative;
+
+  .axis .tick {
+    text {
+      fill: $text-color;
+      color: $text-color;
+      font-size: $font-size-tick;
+    }
+
+    line {
+      opacity: 0.4;
+      stroke: $text-color-weak;
+    }
+  }
+
+  // This hack prevents mouseenter/mouseleave events get fired too often
+  svg {
+    pointer-events: none;
+
+    rect {
+      pointer-events: visiblePainted;
+    }
+  }
+}
+
+.statusmap-tooltip {
+  white-space: nowrap;
+  font-size: $font-size-sm;
+  background-color: $graph-tooltip-bg;
+  color: $text-color;
+
+  .discrete-item {
+    color: #52545c;
+    padding: 1px;
+    font-weight: bold;
+    text-shadow: 0 0 0.2em #FFF, 0 0 0.2em #FFF, 0 0 0.2em #FFF;
+  }
+}
+
+.statusmap-histogram rect {
+  fill: $text-color-weak;
+}
+
+.status-heatmap-crosshair {
+  line {
+    stroke: darken($red,15%);
+    stroke-width: 1;
+  }
+}
+
+.status-heatmap-selection {
+  stroke-width: 1;
+  fill: rgba(102, 102, 102, 0.4);
+  stroke: rgba(102, 102, 102, 0.8);
+}
+
+
+.status-heatmap-legend-wrapper {
+  margin: 0 10px;
+
+  svg {
+    height: 24px;
+    float: left;
+    white-space: nowrap;
+    //padding-left: 10px; // DO NOT TOUCH THIS! legend will be clipped!
+  }
+
+  .status-heatmap-color-legend {
+    margin-top: 4px;
+  }
+
+  .status-heatmap-legend-values {
+    display: inline-block;
+  }
+
+  .axis .tick {
+    text {
+      fill: $text-color;
+      color: $text-color;
+      font-size: $font-size-tick;
+    }
+
+    line {
+      opacity: 0.4;
+      stroke: $text-color-weak;
+    }
+
+    .domain {
+      opacity: 0.4;
+      stroke: $text-color-weak;
+    }
+  }
+}

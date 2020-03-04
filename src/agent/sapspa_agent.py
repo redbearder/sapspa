@@ -128,7 +128,7 @@ def get_instance_servername_list_by_sid(sid):
                 arr = l.split('_')
                 i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
                 p['servername'] = i
-                diaServernameList.append(i)
+                diaServernameList.append(p)
                 pass
     return diaServernameList
 
@@ -323,7 +323,10 @@ class SAPCollector(object):
         # get SID list from os dir
         sidList = get_sid_list()
         for sid in sidList:
-            c = consul.Consul()
+            c = consul.Consul(host=os.environ.get('CONSUL_HOST') if
+                              os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                              port=23345,
+                              scheme='http')
             kvid, kvv = c.kv.get(sid + '_login')
             if kvv:
                 # get SID login info from consul
@@ -364,8 +367,10 @@ class SAPCollector(object):
                     pass
 
                 if conn:
-                    for servername in get_instance_servername_list_by_sid(sid):
+                    for p in get_instance_servername_list_by_sid(sid):
                         # master identification
+                        servername = p['servername']
+                        profile = p['profile']
                         kvid_master, kvv_master = c.kv.get(sid + '_master')
                         if kvv_master:
                             kvvDict_master = json.loads(kvv_master['Value'])
@@ -456,11 +461,11 @@ class SAPCollector(object):
                             "WorkprocessCount",
                             'WorkprocessCount of One Instance in SID group by Type',
                             labels=['SID', 'Instance', 'WorkprocessType'])
-                        g_wpcount.add_metric([sid, servername, 'DIA'],
+                        g_wpcount.add_metric([sid, profile, 'DIA'],
                                              running_dia_count)
-                        g_wpcount.add_metric([sid, servername, 'BTC'],
+                        g_wpcount.add_metric([sid, profile, 'BTC'],
                                              running_btc_count)
-                        g_wpcount.add_metric([sid, servername, 'UPD'],
+                        g_wpcount.add_metric([sid, profile, 'UPD'],
                                              running_upd_count)
                         yield g_wpcount
 
@@ -491,20 +496,28 @@ class SAPCollector(object):
         # yield i
 
 
-c = consul.Consul()
-hostname = socket.gethostname()
-ip = socket.gethostbyname(hostname)
-c.agent.service.register(name=hostname + '_agent',
-                         address=ip,
-                         port=23310,
-                         tags=['sapspa_agent', 'sapspa'],
-                         enable_tag_override=True)
+while True:
+    try:
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                          port=23345,
+                          scheme='http')
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        c.agent.service.register(name=hostname + '_agent',
+                                 address=ip,
+                                 port=23310,
+                                 tags=['sapspa_agent', 'sapspa'],
+                                 enable_tag_override=True)
 
-c.agent.service.register(name=hostname + '_host',
-                         address=ip,
-                         port=23311,
-                         tags=['host', 'sapspa'],
-                         enable_tag_override=True)
+        c.agent.service.register(name=hostname + '_host',
+                                 address=ip,
+                                 port=23311,
+                                 tags=['host', 'sapspa'],
+                                 enable_tag_override=True)
+        break
+    except:
+        continue
 
 # update filebeat config yaml
 if not os.path.exists('/etc/filebeat'):
@@ -546,14 +559,10 @@ for sid in sidList:
 post_dict = {"host": get_host_info(), "app": subapp_list}
 print(post_dict)
 
-kvid, kvv = c.kv.get('sapspa_master')
-if kvv:
-    master_value_dict = json.loads(kvv['Value'])
-    master_ip = master_value_dict['ip']
-
-    requests.post(f'http://{master_ip}:23381/api/v1/agents',
-                  data=post_dict,
-                  headers={'content-type': 'application/json'})
+r = requests.post(f'http://{master_ip}:23381/api/v1/agents',
+                  data=json.dumps(post_dict),
+                  headers={'Content-Type': 'application/json'})
+print(r.text)
 
 REGISTRY.register(SAPCollector())
 # Add prometheus wsgi middleware to route /metrics requests

@@ -2,6 +2,55 @@
 
 ## SAP monitor and analysis bundle project
 <font color=red size=5 face="微软雅黑">Reserved PORT **23300 - 23399**</font>
+## Screenshots
+SAP Monitor
+![](./resource/screenshot/sap_monitor.png)
+Host Monitor
+![](./resource/screenshot/host_monitor.png)
+Dashboard
+![](./resource/screenshot/dashboard.png)
+
+## Installation
+assume you have a master machine which will run SAPSPA master app and IP address is ***{MASTER_IP}***
+### 1. Download Code
+```
+wget https://github.com/redbearder/sapspa/archive/latest.tar.gz 
+tar zxvf latest.tar.gz
+```
+### 2. Installation on Master
+* With Script
+
+```
+cd sapspa/script
+bash start_master.sh --master=MASTER_IP
+```
+* With Docker
+
+```
+cd sapspa/docker-compose
+docker-compose -f docker-compose-master.yml up -d
+```
+### 3. Installation in Agent
+* With Script
+
+```
+cd sapspa/script
+bash start_agent.sh --master=MASTER_IP
+```
+* With Docker
+
+```
+cd sapspa/docker-compose
+sed -i "s?192.168.50.210?MASTER_IP?g" docker-compose-agent.yml
+docker-compose -f docker-compose-agent.yml up -d
+```
+
+## Usage
+* Dashboard [http://***MASTER_IP***:23380/]()
+* Grafana [http://***MASTER_IP***:23330/]()
+* Kibana [http://***MASTER_IP***:23356/]()
+* Prometheus [http://***MASTER_IP***:23390/]()
+* Consul [http://***MASTER_IP***:23345/]()
 
 ## Task list
 ### 1. backend future
@@ -32,11 +81,11 @@
 - [x] prometheus, port 23390
 
 ### 4. grafana dashboard
-- [ ] usercount list and user type dist
-- [ ] workprocess list and type
-- [ ] background job status
-- [ ] dump status SNAP
-- [ ] instance status
+- [x] usercount list and user type dist
+- [x] workprocess list and type
+- [x] background job status
+- [x] dump status SNAP
+- [x] instance status
 - [ ] transport status
 - [ ] rfc resource status
 - [x] os monitor
@@ -45,10 +94,8 @@
 - [x] grafana, port 23330
 
 ### 5. docker-compose deploy script
-- [ ] backend
-- [ ] agent
-- [ ] InfluxDB? openTSDB? **_prometheus_**?
-- [ ] consul and consul webui
+- [x] master
+- [x] agent
 
 ### 6. bash deploy script
 - [x] agent
