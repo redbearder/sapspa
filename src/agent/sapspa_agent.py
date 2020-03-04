@@ -496,23 +496,28 @@ class SAPCollector(object):
         # yield i
 
 
-c = consul.Consul(host=os.environ.get('CONSUL_HOST')
-                  if os.environ.get('CONSUL_HOST') else '127.0.0.1',
-                  port=23345,
-                  scheme='http')
-hostname = socket.gethostname()
-ip = socket.gethostbyname(hostname)
-c.agent.service.register(name=hostname + '_agent',
-                         address=ip,
-                         port=23310,
-                         tags=['sapspa_agent', 'sapspa'],
-                         enable_tag_override=True)
+while True:
+    try:
+        c = consul.Consul(host=os.environ.get('CONSUL_HOST')
+                          if os.environ.get('CONSUL_HOST') else '127.0.0.1',
+                          port=23345,
+                          scheme='http')
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+        c.agent.service.register(name=hostname + '_agent',
+                                 address=ip,
+                                 port=23310,
+                                 tags=['sapspa_agent', 'sapspa'],
+                                 enable_tag_override=True)
 
-c.agent.service.register(name=hostname + '_host',
-                         address=ip,
-                         port=23311,
-                         tags=['host', 'sapspa'],
-                         enable_tag_override=True)
+        c.agent.service.register(name=hostname + '_host',
+                                 address=ip,
+                                 port=23311,
+                                 tags=['host', 'sapspa'],
+                                 enable_tag_override=True)
+        break
+    except:
+        continue
 
 # update filebeat config yaml
 if not os.path.exists('/etc/filebeat'):
