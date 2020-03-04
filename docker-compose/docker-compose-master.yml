@@ -3,92 +3,107 @@
 ##################################################################
 version: '3.5'
 
+# MASTER_IP=127.0.0.1
+
 services:
   consul:
-    image: consul
-    network_mode: "host"
+    image: consul:1.7.1
     ports:
-      - 23340
-      - 23342
-      - 23341
-      - 23346
-      - 23345
-    command: consul agent -bootstrap -data-dir=consuldata -ui -client=0.0.0.0 -bind=${MASTER_IP} -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342
+      - 23340:23340
+      - 23342:23342
+      - 23341:23341
+      - 23346:23346
+      - 23345:23345
+    command:
+      consul agent -bootstrap -data-dir=/consul/data -ui -client=0.0.0.0 -bind=0.0.0.0 -server -server-port=23340 -dns-port=23346 -http-port=23345 -serf-wan-port=23342
 
   elasticsearch:
     image: elasticsearch:7.4.2
-    network_mode: "host"
     ports:
-      - 23392
-      - 23393
-    command: bin/elasticsearch
-    volumes:
-      - ../etc/elasticsearch:/usr/share/elasticsearch/config
+      - 23392:23392
+      - 23393:23393
+    command:
+      bin/elasticsearch -E 'network.host=0.0.0.0' -E 'http.port=23392' -E 'discovery.type=single-node'
 
   kibana:
     image: kibana:7.4.2
-    network_mode: "host"
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
     ports:
-      - 23356
-    command: bin/kibana
-    volumes:
-      - ../etc/kibana:/usr/share/kibana/config
+      - 23356:23356
+    command: bin/kibana --port 23356 --host 0.0.0.0 --elasticsearch "http://elasticsearch:23392"
 
   prometheus:
     image: prom/prometheus
-    network_mode: "host"
+    links:
+      - consul
+    depends_on:
+      - consul
     ports:
-      - 23390
-    command: bin/prometheus --web.listen-address="0.0.0.0:23390"
+      - 23390:23390
+    command:
+      --web.listen-address="0.0.0.0:23390" --config.file=/etc/prometheus/prometheus.yml
     volumes:
-        - ../etc/grafana:/usr/share/grafana/conf
-        -
+        - ../etc/prometheus:/etc/prometheus
+
+  # grafana admin password is abcd-1234
   grafana:
-    image: grafana:6.6.2
-    network_mode: "host"
+    image: grafana/grafana:6.6.2
+    links:
+      - prometheus
+    depends_on:
+      - prometheus
     ports:
-      - 23330
-    command: bin/grafana
+      - 23330:23330
+    environment:
+      - GF_PATHS_HOME=/usr/share/grafana
+      - GF_PATHS_PLUGINS=/usr/share/grafana/data/plugins
+      - GF_PATHS_DATA=/usr/share/grafana/data
+      - GF_PATHS_CONFIG=/usr/share/grafana/conf/defaults.ini
     volumes:
-      - ../etc/grafana:/usr/share/grafana/conf
+      - ../etc/grafana/conf:/usr/share/grafana/conf
+      - ../etc/grafana/data:/usr/share/grafana/data
 
   mysql:
     image: mysql:5.7
-    network_mode: "host"
     ports:
-      - 3306
+      - 23306:3306
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=sapspa
 
   backend:
     build: ../src/backend
-    restart: "yes"
-    network_mode: "host"
+    links:
+      - mysql
+      - consul
+      - elasticsearch
     depends_on:
       - mysql
       - consul
       - elasticsearch
+    environment:
+      - ES_HOST=elasticsearch
+      - MYSQL_HOST=mysql
+      - CONSUL_HOST=consul
     ports:
-      - 23381
+      - 23381:23381
     expose:
       - 23381
-    command: 
-      gunicorn -b :23381 --access-logfile - --error-logfile - sapspa:app --daemon
-    volumes:
-      - ../src/backend:/opt/backend
+    command:
+      bash boot.sh
 
   admin:
     build: ../src/admin
-    restart: "yes"
-    network_mode: "host"
+    links:
+      - backend
     depends_on:
       - backend
     ports:
-      - 23380
+      - 23380:23380
     expose:
       - 23380
     command:
       caddy
-    volumes:
-      - ../src/admin:/opt/admin
