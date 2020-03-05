@@ -24,6 +24,15 @@ services:
     command:
       --web.listen-address=":23311"
 
+  filebeat:
+    image: elastic/filebeat:7.4.2
+    command:
+      /usr/share/filebeat/filebeat -E "output.elasticsearch.hosts=['http://192.168.50.210:23392']" -c /etc/filebeat/filebeat.yml
+    volumes:
+      - ../etc/filebeat:/etc/filebeat
+      - /usr/sap:/usr/sap
+      - /sapmnt:/sapmnt
+
   agent:
     build:
       context: ../src/agent
@@ -34,6 +43,7 @@ services:
       - consul
     depends_on:
       - consul
+      - filebeat
     environment:
       - CONSUL_HOST=consul
     ports:
@@ -42,14 +52,6 @@ services:
       - 23310
     command:
       venv/bin/uwsgi --http 0.0.0.0:23310 --wsgi-file sapspa_agent.py --callable app_dispatch
-    volumes:
-      - /usr/sap:/usr/sap
-      - /sapmnt:/sapmnt
-
-  filebeat:
-    image: elastic/filebeat:7.4.2
-    command:
-      /usr/share/filebeat/filebeat -E "output.elasticsearch.hosts=['http://192.168.50.210:23392']" -c /etc/filebeat/filebeat.yml
     volumes:
       - ../etc/filebeat:/etc/filebeat
       - /usr/sap:/usr/sap
