@@ -23,7 +23,7 @@ services:
       - 23392:23392
       - 23393:23393
     command:
-      bin/elasticsearch -E 'network.host=0.0.0.0' -E 'http.port=23392' -E 'discovery.type=single-node'
+      bin/elasticsearch -E 'network.host=0.0.0.0' -E 'http.port=23392' -E 'discovery.type=single-node' -E 'transport.tcp.port=23393'
 
   kibana:
     image: kibana:7.4.2
