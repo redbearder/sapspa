@@ -20,7 +20,7 @@
 #
 # Use a descriptive name for the node:
 #
-#node.name: node-1
+# node.name: node-1
 #
 # Add custom attributes to the node:
 #
@@ -65,11 +65,11 @@ http.port: 23392
 # Pass an initial list of hosts to perform discovery when this node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-discovery.seed_hosts: ["127.0.0.1", "[::1]"]
+discovery.seed_hosts: ["127.0.0.1:23393", "[::1]:23393"]
 #
 # Bootstrap the cluster using an initial set of master-eligible nodes:
 #
-#cluster.initial_master_nodes: ["node-1", "node-2"]
+# cluster.initial_master_nodes: ["node-1", "node-2"]
 #
 # For more information, consult the discovery and cluster formation module documentation.
 #
@@ -77,7 +77,7 @@ discovery.seed_hosts: ["127.0.0.1", "[::1]"]
 #
 # Block initial recovery after a full cluster restart until N nodes are started:
 #
-#gateway.recover_after_nodes: 3
+# gateway.recover_after_nodes: 3
 #
 # For more information, consult the gateway module documentation.
 #
@@ -86,3 +86,4 @@ discovery.seed_hosts: ["127.0.0.1", "[::1]"]
 # Require explicit names when deleting indices:
 #
 #action.destructive_requires_name: true
+transport.tcp.port: 23393
