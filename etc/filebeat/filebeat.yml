@@ -153,17 +153,17 @@ setup.kibana:
 output.elasticsearch:
   # Array of hosts to connect to.
   hosts: ["localhost:23392"]
-  #  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
-  index: "sapspa-dm0-filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  # index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  # index: "sapspa-dm0-filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
   # Optional protocol and basic auth credentials.
   #protocol: "https"
   #username: "elastic"
   #password: "changeme"
-setup.template:
-   name: "sapspa-filebeat-index-template"
-   pattern: "sapspa-*"
+#setup.template:
+#   name: "sapspa-filebeat-index-template"
+#   pattern: "sapspa-*"
    #enabled: false
-setup.ilm.enabled: false
+#setup.ilm.enabled: false
 #----------------------------- Logstash output --------------------------------
 #output.logstash:
   # The Logstash hosts
