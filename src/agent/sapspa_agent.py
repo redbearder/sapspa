@@ -555,6 +555,19 @@ for sid in sidList:
     for instance in get_instance_list_by_sid(sid):
         instance_list.append(instance)
     subapp['instance'] = instance_list
+    # cat /etc/services | grep sapmsDM0 |awk '{print $2}'
+    # get_sapmsserv_cmd = "cat /etc/services | grep sapms%s |awk '{print $2}'" % sid
+    get_sapmsserv_cmd = "cat /etc/services"
+    get_sapmsserv_cmd_args = shlex.split(get_sapmsserv_cmd)
+    sp = subprocess.run(get_sapmsserv_cmd_args, capture_output=True)
+    outputlist = sp.stdout.decode('utf-8').split("\n")
+    for l in outputlist:
+        if "sapms%s" % sid in l:
+            msbs = l.split('\t')
+            servb = msbs[1]
+            serv = servb.split('/')[0]
+            subapp['msserv'] = int(serv)
+            break
     subapp_list.append(subapp)
 post_dict = {"host": get_host_info(), "app": subapp_list}
 print(post_dict)

@@ -89,7 +89,12 @@ class Agents(Resource):
             if oldsubapp:
                 subappid = oldsubapp.subappid
             else:
-                subappschema = subapp_schema.load({"subappsid": subapp['sid']})
+                subappschema = subapp_schema.load({
+                    "subappsid":
+                    subapp['sid'],
+                    "subappmsserv":
+                    subapp['msserv']
+                })
                 subapp_model = SubappModel(**subappschema)
                 db.session.add(subapp_model)
                 db.session.commit()

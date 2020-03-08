@@ -85,10 +85,17 @@ class SubappModel(db.Model):
                           nullable=False,
                           index=True,
                           comment='subapp SID')
+    subappmsserv = db.Column(db.Integer,
+                             nullable=True,
+                             comment='subapp msserv')
     subappurl = db.Column(db.String(100), nullable=True, comment='subapp url')
     subappdesc = db.Column(db.String(100),
                            nullable=True,
                            comment='subapp description')
+    subappguiconn = db.Column(
+        db.TEXT,
+        nullable=True,
+        comment='subapp sapgui connection info for login')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),
                           comment='subapp create datetime')
@@ -210,9 +217,11 @@ class AppSchema(Schema):
 class SubappSchema(Schema):
     subappid = fields.Int(dump_only=True)
     subappsid = fields.Str(required=True, validate=validate.Length(equal=3))
+    subappmsserv = fields.Int(required=True)
     subappurl = fields.URL(required=False)
     subappdesc = fields.Str(required=False,
                             validate=validate.Length(min=3, max=255))
+    subappguiconn = fields.Str(required=False)
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)
 

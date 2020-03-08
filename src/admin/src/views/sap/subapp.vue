@@ -46,14 +46,14 @@
       </el-table-column>
       <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
+          <a href="sapguiup:///{{scope.row.host.hostname}} {{scope.row.instanceno}}">
+            <img src="https://d1.awsstatic.com/product-marketing/AppStream2.0/SAPLogon.0e7ea3303234d757421e5b632960dd292572a34a.png" class="avatar">
+          </a>
           <router-link :to="'/subapps/'+scope.row.subappid+'/instances'" class="link-type">
             <el-button type="primary">
               InstanceList
             </el-button>
           </router-link>
-          <!--          <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row,'deleted')">-->
-          <!--            删除-->
-          <!--          </el-button>-->
         </template>
       </el-table-column>
     </el-table>
