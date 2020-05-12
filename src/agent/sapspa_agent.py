@@ -23,6 +23,7 @@ from decimal import Decimal
 import consul
 import yaml
 import shlex, subprocess
+from elasticsearch import Elasticsearch
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -267,6 +268,33 @@ class R3rfcconn(object):
         tablename = 'E070'
         return self.get_table_data(tablename)
 
+    def get_st02_data(self):
+        kwparam = {}
+        st02data = self.get_rfc_data('SAPTUNE_GET_SUMMARY_STATISTIC')
+        del st02data['TABLE_QUALITIES']
+        del st02data['TABLE_STATISTIC']
+        del st02data['TABLE_STATISTIC_64']
+        del st02data['CURSOR_CACHE_INFO']
+        del st02data['MODE_MEMORY_HISTORY']
+        del st02data['INTERNAL_EXTERNAL_MODES_MEMORY']
+        del st02data['BUFFER_STATISTIC_64']
+        st02data_json = json.dumps(st02data, cls=DecimalEncoder)
+        return json.loads(st02data_json)
+
+    def get_st03_data_summary(self):
+        kwparam = {}
+        kwparam['READ_START_DATE'] = date.today()
+        kwparam['READ_END_DATE'] = date.today()
+        kwparam['READ_START_TIME'] = (datetime.now() -
+                                      timedelta(seconds=60)).strftime('%H%M%S')
+        kwparam['READ_END_TIME'] = (datetime.now() -
+                                    timedelta(seconds=0)).strftime('%H%M%S')
+        st03datadetail = self.get_rfc_data('SAPWL_SNAPSHOT_FROM_REMOTE_SYS',
+                                           **kwparam)
+        st03datadetail_json = json.dumps(st03datadetail['SUMMARY'],
+                                         cls=DecimalEncoder)
+        return json.loads(st03datadetail_json)
+
     def close(self):
         self.conn.close()
 
@@ -468,6 +496,102 @@ class SAPCollector(object):
                         g_wpcount.add_metric([sid, profile, 'UPD'],
                                              running_upd_count)
                         yield g_wpcount
+
+                        # st02 data by instance
+                        st02data = conn.get_st02_data()
+                        st02data['instance'] = profile
+                        g_st02_sapmemory = GaugeMetricFamily(
+                            "SAPMemory",
+                            'SAP Memory Current Use % in TCode ST02',
+                            labels=[
+                                'SID', 'Instance', 'SAPMemoryCurrentUsePercent'
+                            ])
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'PageArea'],
+                            round(
+                                float(st02data['PAGING_AREA']['CURR_USED']) /
+                                float(st02data['PAGING_AREA']['AREA_SIZE']), 4)
+                            * 100)
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'ExtendedMemory'],
+                            round(
+                                float(
+                                    st02data['EXTENDED_MEMORY_USAGE']['USED'])
+                                / float(st02data['EXTENDED_MEMORY_USAGE']
+                                        ['TOTAL']), 4) * 100)
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'HeapMemory'],
+                            round(
+                                float(st02data['HEAP_MEMORY_USAGE']['USED']) /
+                                float(st02data['HEAP_MEMORY_USAGE']['TOTAL']),
+                                4) * 100)
+                        yield g_st02_sapmemory
+
+                        g_st02_callstatics = GaugeMetricFamily(
+                            "CallStatistics",
+                            'SAP Call Statistics HitRadio % in TCode ST02',
+                            labels=[
+                                'SID', 'Instance',
+                                'CallStatisticsHitRadioPercent'
+                            ])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'DIRECT'],
+                            st02data['TOTAL_HITRATIO']['DIRECT'])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'SEQUENTIAL'],
+                            st02data['TOTAL_HITRATIO']['SEQUENTIAL'])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'AVERAGE'],
+                            st02data['TOTAL_HITRATIO']['AVERAGE'])
+                        yield g_st02_callstatics
+
+                        es = Elasticsearch(hosts=[{
+                            "host": "{master_ip}",
+                            "port": 23392
+                        }])
+                        es.index(
+                            index="ST02",
+                            body=st02data,
+                        )
+
+                        # st03 summary data by instance
+                        st03detail_summary = conn.get_st03_data_summary()
+                        st03detail = {}
+                        st03detail['instance'] = profile
+                        st03detail['SUMMARY'] = st03detail_summary
+                        g_st03detail_steps = GaugeMetricFamily(
+                            "DialogSteps",
+                            'Dialog Steps in TCode ST03',
+                            labels=['SID', 'Instance', 'DialogSteps'])
+                        g_st03detail_averageRespTime = GaugeMetricFamily(
+                            "AverageRespTime",
+                            'Average Resp Time in TCode ST03',
+                            labels=['SID', 'Instance', 'AverageRespTime'])
+                        g_st03detail_averageDBTime = GaugeMetricFamily(
+                            "AverageDBTime",
+                            'Average DB Time in TCode ST03',
+                            labels=['SID', 'Instance', 'AverageDBTime'])
+
+                        for sumary in st03detail_summary:
+                            g_st03detail_steps.add_metric(
+                                [sid, profile, sumary['TASKTYPE']],
+                                float(sumary['COUNT']))
+                            g_st03detail_averageRespTime.add_metric(
+                                [sid, profile, sumary['TASKTYPE']],
+                                round(
+                                    float(sumary['RESPTI']) /
+                                    float(sumary['COUNT'])))
+                            # g_st03detail_averageDBTime.add_metric(
+                            #     [sid, profile, sumary['TASKTYPE']],
+                            #     round(sumary['RESPTI'] / sumary['COUNT']))
+
+                        yield g_st03detail_steps
+                        yield g_st03detail_averageRespTime
+
+                        es.index(
+                            index="ST03",
+                            body=st03detail,
+                        )
 
                     conn.close()
         '''
