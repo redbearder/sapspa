@@ -304,17 +304,17 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return 'This is a wrong Index Page'
 
 
-@app.route('/api/hosts')
+@app.route('/api/hosts', methods=['GET'])
 def hosts():
     return 'current hosts info'
 
 
-@app.route('/api/apps')
+@app.route('/api/apps', methods=['GET'])
 def subapps_info():
     '''
     here app means subapp
@@ -323,7 +323,7 @@ def subapps_info():
     return 'current apps, subapps, instances, profiles info'
 
 
-@app.route('/api/apps/<string:sid>')
+@app.route('/api/apps/<string:sid>', methods=['GET'])
 def subapp_info(sid):
     '''
     all subapp infomation includes instances info
@@ -333,14 +333,51 @@ def subapp_info(sid):
     return 'current subapp_info info'
 
 
-@app.route('/api/apps/<string:sid>/instances')
+@app.route('/api/apps/<string:sid>/instances', methods=['GET'])
 def subapp_instances(sid):
     return 'current subapp_instances info'
 
 
-@app.route('/api/apps/<string:sid>/instances/<string:instanceid>')
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>',
+           methods=['GET'])
 def subapp_instance_info(sid, instanceid):
     return 'current subapp_instances info'
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['POST'])
+def subapp_instance_start(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_start_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function StartSystem"'
+    instance_start_cmd_args = shlex.split(instance_start_cmd)
+    sp = subprocess.run(instance_start_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    return output
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['DELETE'])
+def subapp_instance_stop(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_stop_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function StopSystem"'
+    instance_stop_cmd_args = shlex.split(instance_stop_cmd)
+    sp = subprocess.run(instance_stop_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    return output
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['GET'])
+def subapp_instance_status(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_check_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function GetProcessList"'
+    instance_check_cmd_args = shlex.split(instance_check_cmd)
+    sp = subprocess.run(instance_check_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    if 'Red' in output or 'GRAY' in output:
+        return '0'
+    else:
+        return '1'
 
 
 class SAPCollector(object):
