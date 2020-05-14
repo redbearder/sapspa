@@ -10,8 +10,8 @@ import redis
 import rq
 from flask import current_app, url_for
 from flask_login import UserMixin
-from marshmallow import (Schema, ValidationError, fields, post_load, pprint,
-                         pre_load, validate)
+from marshmallow import (Schema, ValidationError, fields, pre_dump, pprint,
+                         post_load, post_dump, pre_load, validate)
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, login
@@ -85,7 +85,7 @@ class SubappModel(db.Model):
                           nullable=False,
                           index=True,
                           comment='subapp SID')
-    subappmsserv = db.Column(db.Integer,
+    subappmsserv = db.Column(db.String(10),
                              nullable=True,
                              comment='subapp msserv')
     subappurl = db.Column(db.String(100), nullable=True, comment='subapp url')
@@ -183,6 +183,60 @@ class LoginModel(db.Model):
     subapp = db.relationship('SubappModel', foreign_keys=[subappid])
 
 
+class OperationModel(db.Model):
+    __tablename__ = 'operation'
+    operationid = db.Column(db.Integer,
+                            primary_key=True,
+                            autoincrement=True,
+                            comment='operation unique id')
+    operationstatus = db.Column(db.Integer,
+                                nullable=False,
+                                default=0,
+                                comment='operation status')
+    createdAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          comment='operation create datetime')
+    updatedAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          onupdate=db.func.now(),
+                          comment='operation update datetime')
+
+
+class OperationSubModel(db.Model):
+    __tablename__ = 'operationsub'
+    operationsubid = db.Column(db.Integer,
+                               primary_key=True,
+                               autoincrement=True,
+                               comment='operationsubid unique id')
+    operationid = db.Column(db.Integer, db.ForeignKey('operation.operationid'))
+    instanceid = db.Column(db.Integer, db.ForeignKey('instance.instanceid'))
+    operationsubtype = db.Column(db.String(50),
+                                 nullable=False,
+                                 comment='operationsub type')
+    operationsubdetail = db.Column(db.TEXT,
+                                   nullable=False,
+                                   comment='operationsub detail')
+    operationsubcomment = db.Column(db.String(250),
+                                    nullable=False,
+                                    comment='operationsub comment')
+    operationsubsequence = db.Column(db.Integer,
+                                     nullable=False,
+                                     comment='operationsub sequence')
+    operationsubstatus = db.Column(db.Integer,
+                                   nullable=False,
+                                   default=0,
+                                   comment='operationsub status')
+    createdAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          comment='operationsub create datetime')
+    updatedAt = db.Column(db.DateTime,
+                          default=db.func.now(),
+                          onupdate=db.func.now(),
+                          comment='operationsub update datetime')
+    instance = db.relationship('InstanceModel', foreign_keys=[instanceid])
+    operation = db.relationship('OperationModel', foreign_keys=[operationid])
+
+
 # Custom validator
 def must_not_be_blank(data):
     if not data:
@@ -217,7 +271,7 @@ class AppSchema(Schema):
 class SubappSchema(Schema):
     subappid = fields.Int(dump_only=True)
     subappsid = fields.Str(required=True, validate=validate.Length(equal=3))
-    subappmsserv = fields.Int(required=True)
+    subappmsserv = fields.Str(required=True)
     subappurl = fields.URL(required=False)
     subappdesc = fields.Str(required=False,
                             validate=validate.Length(min=3, max=255))
@@ -265,3 +319,63 @@ class LoginSchema(Schema):
     subapp = fields.Nested(SubappSchema)
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)
+
+
+class OperationSchema(Schema):
+    operationid = fields.Int(dump_only=True)
+    operationstatus = fields.Int(required=True)
+    createdAt = fields.DateTime(dump_only=True)
+    updatedAt = fields.DateTime(dump_only=True)
+
+
+class OperationSubSchema(Schema):
+    operationsubid = fields.Int(dump_only=True)
+    operationid = fields.Int(required=True)
+    instanceid = fields.Int(required=True)
+    operation = fields.Nested(OperationSchema)
+    instance = fields.Nested(InstanceSchema)
+    operationsubtype = fields.Str(required=True,
+                                  validate=validate.Length(min=3, max=50))
+    operationsubdetail = fields.Str(required=True)
+    operationsubcomment = fields.Str(required=True,
+                                     validate=validate.Length(min=3, max=250))
+    operationsubsequence = fields.Int(required=True)
+    operationsubstatus = fields.Int(required=True)
+    createdAt = fields.DateTime(dump_only=True)
+    updatedAt = fields.DateTime(dump_only=True)
+
+    @pre_load
+    def operationsubdetail_obj_to_jsonstr(self, load_data, **kwargs):
+        load_data["operationsubdetail"] = json.dumps(
+            load_data["operationsubdetail"])
+        return load_data
+
+    @pre_load(pass_many=True)
+    def operationsubdetail_objs_to_jsonstrs(self, load_datas, many, **kwargs):
+        if many:
+            for i in range(len(load_datas)):
+                load_datas[i]["operationsubdetail"] = json.dumps(
+                    load_datas[i]["operationsubdetail"])
+            return load_datas
+        else:
+            load_datas["operationsubdetail"] = json.dumps(
+                load_datas["operationsubdetail"])
+            return load_datas
+
+    @post_dump
+    def operationsubdetail_jsonstr_to_obj(self, dump_data, **kwargs):
+        dump_data["operationsubdetail"] = json.loads(
+            dump_data["operationsubdetail"])
+        return dump_data
+
+    @post_dump(pass_many=True)
+    def operationsubdetail_jsonstrs_to_objs(self, dump_datas, many, **kwargs):
+        if many:
+            for i in range(len(dump_datas)):
+                dump_datas[i]["operationsubdetail"] = json.loads(
+                    dump_datas[i]["operationsubdetail"])
+            return dump_datas
+        else:
+            dump_datas["operationsubdetail"] = json.loads(
+                dump_datas["operationsubdetail"])
+            return dump_datas
