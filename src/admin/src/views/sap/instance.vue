@@ -134,7 +134,6 @@ export default {
     } else {
       this.getList()
     }
-    setInterval(this.getInstanceStatus(), 10)
   },
   methods: {
     getList() {
@@ -144,6 +143,7 @@ export default {
         this.total = response.data.count
 
         this.listLoading = false
+          setInterval(this.getInstanceStatus(), 10)
       })
     },
     getListInHost(hostid) {
