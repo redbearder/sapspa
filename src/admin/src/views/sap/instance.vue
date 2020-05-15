@@ -199,7 +199,7 @@ export default {
       }))
     },
     getInstanceStatus() {
-      for (let i = 0; i < this.list.length(); i++) {
+      for (let i = 0; i < this.list.length; i++) {
         const i = this.list[i]
         fetchInstanceStatus(i.instid).then(response => {
           if (response === '1') {

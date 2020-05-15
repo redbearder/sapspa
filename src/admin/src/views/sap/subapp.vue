@@ -189,7 +189,7 @@ export default {
       }))
     },
     getSubappStatus() {
-      for (let i = 0; i < this.list.length(); i++) {
+      for (let i = 0; i < this.list.length; i++) {
         const i = this.list[i]
         fetchSubappStatus(i.subappid).then(response => {
           if (response === '1') {
