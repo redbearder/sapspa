@@ -93,6 +93,18 @@ def get_sid_list():
     return sidlist
 
 
+def get_hdb_sid_list():
+    sidlist: List[str] = []
+    dirlist = os.listdir('/usr/sap')
+    for dir in dirlist:
+        if len(dir) == 3:
+            if os.path.exists(f'/usr/sap/{dir}/SYS/profile/DEFAULT.PFL'):
+                sidlist.append(dir)
+
+    appsidlist = get_sid_list()
+    return list(set(sidlist) - set(appsidlist))
+
+
 def get_instance_list_by_sid(sid):
     instance: List[Dict] = []
     profilepath = '/sapmnt/' + sid + '/profile'
@@ -112,6 +124,25 @@ def get_instance_list_by_sid(sid):
             else:
                 # ASCS
                 p['type'] = 'ASCS'
+            instance.append(p)
+    return instance
+
+
+def get_hdb_list_by_sid(sid):
+    instance: List[Dict] = []
+    profilepath = '/usr/sap/' + sid + '/SYS/profile'
+    list1 = os.listdir(profilepath)
+    for l in list1:
+        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+            p = {}
+            p['profile'] = l
+            arr = l.split('_')
+            p['sysnr'] = arr[1][-2:]
+            p['host'] = arr[2]
+            p['sid'] = arr[0]
+            i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
+            p['servername'] = i
+            p['type'] = 'HDB'
             instance.append(p)
     return instance
 
@@ -730,7 +761,19 @@ for sid in sidList:
             subapp['msserv'] = int(serv)
             break
     subapp_list.append(subapp)
-post_dict = {"host": get_host_info(), "app": subapp_list}
+
+hdb_list: List[Dict] = []
+for sid in get_hdb_sid_list():
+    hdbapp: Dict = {}
+    hdbapp['sid'] = sid
+    instance_list: List[Dict] = []
+    for instance in get_hdb_list_by_sid(sid):
+        instance_list.append(instance)
+    hdbapp['instance'] = instance_list
+    hdbapp['msserv'] = '00'
+    hdb_list.append(hdbapp)
+
+post_dict = {"host": get_host_info(), "app": subapp_list, "hdb": hdb_list}
 print(post_dict)
 
 r = requests.post(f'http://{master_ip}:23381/api/v1/agents',
