@@ -226,6 +226,10 @@ class OperationSubModel(db.Model):
                                    nullable=False,
                                    default=0,
                                    comment='operationsub status')
+    operationsubstatusassert = db.Column(db.String(50),
+                                         nullable=False,
+                                         default='0',
+                                         comment='operationsub assert status')
     createdAt = db.Column(db.DateTime,
                           default=db.func.now(),
                           comment='operationsub create datetime')
@@ -341,6 +345,9 @@ class OperationSubSchema(Schema):
                                      validate=validate.Length(min=3, max=250))
     operationsubsequence = fields.Int(required=True)
     operationsubstatus = fields.Int(required=True)
+    operationsubstatusassert = fields.Str(required=True,
+                                          validate=validate.Length(min=1,
+                                                                   max=50))
     createdAt = fields.DateTime(dump_only=True)
     updatedAt = fields.DateTime(dump_only=True)
 

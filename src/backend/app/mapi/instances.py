@@ -5,9 +5,39 @@ from app import db
 from app.utils import bad_request, normal_request, query_request
 from app.models import InstanceModel, InstanceSchema, OperationModel, OperationSchema, OperationSubModel, OperationSubSchema
 import json
+import threading
+import requests
+import time
 
 instance_schema = InstanceSchema()
 instances_schema = InstanceSchema(many=True)
+
+
+def operation_func(**kwargs):
+    if "instlist" in kwargs:
+        pass
+    if 'inst' in kwargs:
+        detail = kwargs['inst']['operationsubdetail']
+        if detail['method'] == 'DELETE':
+            r = requests.delete(detail['url'])
+            if r.status_code == 200:
+                opsub = OperationSubModel.query.get(
+                    kwargs['inst']['operationsubid'])
+                opsub.operationsubstatus = 1
+                op = OperationModel.query.get(kwargs['inst']['operationsid'])
+                op.operationstatus = 1
+                db.session.commit()
+
+        if detail['method'] == 'POST':
+            r = requests.post(detail['url'])
+            if r.status_code == 200:
+                opsub = OperationSubModel.query.get(
+                    kwargs['inst']['operationsubid'])
+                opsub.operationsubstatus = 1
+                op = OperationModel.query.get(kwargs['inst']['operationsid'])
+                op.operationstatus = 1
+                db.session.commit()
+    pass
 
 
 class Instances(Resource):
@@ -102,12 +132,22 @@ class InstaceStatus(Resource):
         opsub['operationsubcomment'] = f'Start Instance {instid}'
         opsub['operationsubsequence'] = 1
         opsub['operationsubstatus'] = 0
+        opsub['operationsubstatusassert'] = '1'
+
+        newopsub = dict(opsub)
 
         operationSubSchema = OperationSubSchema(many=False).load(opsub)
         opSubModel = OperationSubModel(**operationSubSchema)
         db.session.add(opSubModel)
 
         db.session.commit()
+
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "inst": newopsub
+                         }).start()
+
         return normal_request("create start instance operation success")
 
     def delete(self, instid):
@@ -134,12 +174,23 @@ class InstaceStatus(Resource):
         opsub['operationsubcomment'] = f'Stop Instance {instid}'
         opsub['operationsubsequence'] = 1
         opsub['operationsubstatus'] = 0
+        opsub['operationsubstatusassert'] = '0'
+
+        newopsub = dict(opsub)
 
         operationSubSchema = OperationSubSchema().load(opsub)
         opSubModel = OperationSubModel(**operationSubSchema)
         db.session.add(opSubModel)
-
+        db.session.flush()
+        newopsub['operationsubid'] = opSubModel.operationsubid
         db.session.commit()
+
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "inst": newopsub
+                         }).start()
+
         return normal_request("create stop instance operation success")
 
     def get(self, subappid):

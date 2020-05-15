@@ -6,11 +6,85 @@ from app import db
 from app.utils import bad_request, normal_request, query_request
 from app.models import SubappModel, SubappSchema, InstanceModel, InstanceSchema, OperationModel, OperationSchema, OperationSubModel, OperationSubSchema
 import json
+import requests
+import threading
+import time
+from app import create_app
 
 subapps_schema = SubappSchema(many=True)
 subapp_schema = SubappSchema()
 instance_schema = InstanceSchema()
 instances_schema = InstanceSchema(many=True)
+
+
+def operation_func(**kwargs):
+    if "inst" in kwargs:
+        pass
+    if 'instlist' in kwargs:
+        instlist = kwargs['instlist']
+        sequence = None
+        opid = None
+        glist = []
+        innerlist = []
+        for i in range(len(instlist)):
+            if not sequence:
+                innerlist.append(instlist[i])
+                sequence = instlist[i]['operationsubsequence']
+                opid = instlist[i]['operationid']
+            elif sequence != instlist[i]['operationsubsequence']:
+                glist.append(innerlist)
+                innerlist = []
+                innerlist.append(instlist[i])
+                sequence = instlist[i]['operationsubsequence']
+            else:
+                innerlist.append(instlist[i])
+
+            if i == len(instlist) - 1:
+                glist.append(innerlist)
+
+        for g in glist:
+            opsubidlist = []
+            for inst in g:
+                opsubidlist.append(inst['operationsubid'])
+                detail = inst['operationsubdetail']
+                if detail['method'] == 'DELETE':
+                    # time.sleep(3)
+                    r = requests.delete(detail['url'])
+
+                if detail['method'] == 'POST':
+                    # time.sleep(3)
+                    r = requests.post(detail['url'])
+
+            loop_threshold = 10
+            loop_count = 0
+            while True:
+                assertstatuscount = 0
+                for inst in g:
+                    detail = inst['operationsubdetail']
+                    r = requests.get(detail['url'])
+                    if r.text == inst['operationsubstatusassert']:
+                        assertstatuscount += 1
+                    # time.sleep(3)
+                    # assertstatuscount += 1
+                if assertstatuscount == len(g):
+                    app = create_app()
+                    with app.app_context():
+                        opsub = OperationSubModel.query.filter(
+                            OperationSubModel.operationsubid.in_(
+                                opsubidlist)).update({"operationsubstatus": 1},
+                                                     synchronize_session=False)
+                        db.session.commit()
+                    break
+                time.sleep(3)
+                loop_count += 1
+                if loop_count == loop_threshold:
+                    return
+
+        app = create_app()
+        with app.app_context():
+            op = OperationModel.query.get(opid)
+            op.operationstatus = 1
+            db.session.commit()
 
 
 class SubApps(Resource):
@@ -74,6 +148,7 @@ class SubAppStatus(Resource):
         ]
         sequenceInstanceType = sequenceInstanceType[::-1]
 
+        newInstList = []
         for inst in instList:
             ipaddressarr = json.loads(inst.host.ipaddress)
             opsub = {}
@@ -91,13 +166,25 @@ class SubAppStatus(Resource):
             opsub['operationsubsequence'] = sequenceInstanceType.index(
                 inst.instancetype) + 1
             opsub['operationsubstatus'] = 0
+            opsub['operationsubstatusassert'] = '1'
 
+            newopsub = dict(opsub)
             operationSubSchema = OperationSubSchema().load(opsub)
             opSubModel = OperationSubModel(**operationSubSchema)
             db.session.add(opSubModel)
+            db.session.flush()
+            newopsub['operationsubid'] = opSubModel.operationsubid
             pass
 
         db.session.commit()
+
+        newInstList.sort(key=lambda i: i['operationsubsequence'], reverse=True)
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "instlist": newInstList
+                         }).start()
+
         return normal_request("create start subapp operation success")
 
     def delete(self, subappid):
@@ -113,6 +200,7 @@ class SubAppStatus(Resource):
             'WEBDISPATCHER', 'TREX', 'J2EE', 'DIALOG', 'ASCS', 'HDB'
         ]
 
+        newInstList = []
         for inst in instList:
             ipaddressarr = json.loads(inst.host.ipaddress)
             opsub = {}
@@ -130,12 +218,27 @@ class SubAppStatus(Resource):
             opsub['operationsubsequence'] = sequenceInstanceType.index(
                 inst.instancetype) + 1
             opsub['operationsubstatus'] = 0
+            opsub['operationsubstatusassert'] = '0'
+
+            newopsub = dict(opsub)
 
             operationSubSchema = OperationSubSchema().load(opsub)
             opSubModel = OperationSubModel(**operationSubSchema)
             db.session.add(opSubModel)
+            db.session.flush()
+
+            newopsub['operationsubid'] = opSubModel.operationsubid
+            newInstList.append(newopsub)
 
         db.session.commit()
+
+        newInstList.sort(key=lambda i: i['operationsubsequence'])
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "instlist": newInstList
+                         }).start()
+
         return normal_request("create stop subapp operation success")
 
     def get(self, subappid):
