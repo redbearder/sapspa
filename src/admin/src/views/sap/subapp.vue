@@ -39,6 +39,13 @@
           <span>{{ scope.row.subappdesc }}</span>
         </template>
       </el-table-column>
+      <el-table-column :label="'status'" class-name="status-col" width="50">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.status | statusFilter">
+            {{ scope.row.status }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column :label="'CreatedAt'" align="center" width="150">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
@@ -54,6 +61,12 @@
               InstanceList
             </el-button>
           </router-link>
+          <el-button type="success" size="mini" @click="handleStart(scope.row)">
+            启动
+          </el-button>
+          <el-button size="mini" type="danger" @click="handleStop(scope.row)">
+            停止
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -64,7 +77,7 @@
 </template>
 
 <script>
-import { fetchSubappList, fetchSubappListInApp } from '@/api/subapp'
+import { fetchSubappList, fetchSubappListInApp, fetchSubappStatus, startSubapp, stopSubapp } from '@/api/subapp'
 import waves from '@/directive/waves' // Waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
@@ -76,9 +89,9 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
+        START: 'success',
         draft: 'info',
-        deleted: 'danger'
+        STOP: 'danger'
       }
       return statusMap[status]
     }
@@ -120,6 +133,7 @@ export default {
     } else {
       this.getList()
     }
+    setInterval(this.getSubappStatus(), 10)
   },
   methods: {
     getList() {
@@ -173,6 +187,76 @@ export default {
           return v[j]
         }
       }))
+    },
+    getSubappStatus() {
+      for (let i = 0; i < this.list.length(); i++) {
+        const i = this.list[i]
+        fetchSubappStatus(i.subappid).then(response => {
+          if (response === '1') {
+            this.list[i]['status'] = 'START'
+          } else {
+            this.list[i]['status'] = 'STOP'
+          }
+        })
+      }
+    },
+    handleStart(row) {
+      this.currentSubapp = Object.assign({}, row) // copy obj
+      this.$confirm('确认启动？')
+        .then(_ => {
+          this.start()
+        })
+        .catch(_ => {})
+    },
+    start() {
+      startSubapp(this.currentSubapp.subappid)
+        .then(res => {
+          this.$notify({
+            title: '成功',
+            message: '开始启动',
+            type: 'success',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+        .catch(e => {
+          this.$notify({
+            title: '成功',
+            message: '开始启动',
+            type: 'danger',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+    },
+    handleStop(row) {
+      this.currentSubapp = Object.assign({}, row) // copy obj
+      this.$confirm('确认停止？')
+        .then(_ => {
+          this.stop()
+        })
+        .catch(_ => {})
+    },
+    stop() {
+      stopSubapp(this.currentSubapp.subappid)
+        .then(res => {
+          this.$notify({
+            title: '成功',
+            message: '开始停止',
+            type: 'success',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+        .catch(e => {
+          this.$notify({
+            title: '成功',
+            message: '开始停止',
+            type: 'danger',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
     }
   }
 }

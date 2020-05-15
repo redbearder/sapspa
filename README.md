@@ -61,8 +61,8 @@ docker-compose -f docker-compose-agent.yml up -d
 - [ ] admin and backend basic auth
 - [x] 23381 port support /api /mapi
 - [x] 23380 port support /admin
-- [ ] single instance start/stop control
-- [ ] app all instance start/stop control by sequence
+- [x] single instance start/stop control
+- [x] app all instance start/stop control by sequence
 - [ ] instance move
 - [ ] instance copy
 - [ ] instance auto fix rules panel
@@ -78,15 +78,15 @@ docker-compose -f docker-compose-agent.yml up -d
 - [ ] rfc resource status
 - [x] Consul, port 8300: 23340, 8302: 23342, 8301: 23341, 8600: 23346, 8500: 23345
 - [x] node_exporter, port 23311
-- [ ] single instance start/stop control
-- [ ] app all instance start/stop control by sequence
+- [x] single instance start/stop control
+- [x] app all instance start/stop control by sequence
 - [ ] instance move and status api
 - [ ] instance copy and status api
 - [ ] auto fix atom operation: kill os process
-- [ ] pull st03 workload monitor data to prometheus
-- [ ] pull st03 workload monitor data to es
-- [ ] pull st02 workload monitor data to prometheus
-- [ ] pull st02 workload monitor data to es
+- [x] pull st03 workload monitor data to prometheus
+- [x] pull st03 workload monitor data to es
+- [x] pull st02 workload monitor data to prometheus
+- [x] pull st02 workload monitor data to es
 - [ ] pull db02 workload monitor data to prometheus
 - [ ] pull db02 workload monitor data to es
 - [ ] TBD: stad
