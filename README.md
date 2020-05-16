@@ -131,3 +131,9 @@ docker-compose -f docker-compose-agent.yml up -d
 maybe some code here
 
 ```
+
+## Thanks
+
+Thanks to:
+
+  * [hanadb_exporter](https://github.com/SUSE/hanadb_exporter) - HANA Prometheus Exporter.

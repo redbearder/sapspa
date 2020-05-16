@@ -86,23 +86,29 @@ def get_host_info():
 
 def get_sid_list():
     sidlist: List[str] = []
-    dirlist = os.listdir('/sapmnt')
-    for dir in dirlist:
-        if len(dir) == 3:
-            sidlist.append(dir)
-    return sidlist
+    try:
+        dirlist = os.listdir('/sapmnt')
+        for dir in dirlist:
+            if len(dir) == 3:
+                sidlist.append(dir)
+        return sidlist
+    except:
+        return []
 
 
 def get_hdb_sid_list():
     sidlist: List[str] = []
-    dirlist = os.listdir('/usr/sap')
-    for dir in dirlist:
-        if len(dir) == 3:
-            if os.path.exists(f'/usr/sap/{dir}/SYS/profile/DEFAULT.PFL'):
-                sidlist.append(dir)
+    try:
+        dirlist = os.listdir('/usr/sap')
+        for dir in dirlist:
+            if len(dir) == 3:
+                if os.path.exists(f'/usr/sap/{dir}/SYS/profile/DEFAULT.PFL'):
+                    sidlist.append(dir)
 
-    appsidlist = get_sid_list()
-    return list(set(sidlist) - set(appsidlist))
+        appsidlist = get_sid_list()
+        return list(set(sidlist) - set(appsidlist))
+    except:
+        return []
 
 
 def get_instance_list_by_sid(sid):
