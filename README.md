@@ -2,6 +2,8 @@
 
 ## SAP monitor and analysis bundle project
 <font color=red size=5 face="微软雅黑">Reserved PORT **23300 - 23399**</font>
+
+<font color=green size=5 face="微软雅黑">Grafana Default Password: abcd-1234</font>
 ## Screenshots
 SAP Monitor
 ![](./resource/screenshot/sap_monitor.png)
