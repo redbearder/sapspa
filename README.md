@@ -77,7 +77,7 @@ https://github.com/iamseth/oracledb_exporter
 * Consul [http://***MASTER_IP***:23345/]()
 
 ## Task list
-### 1. backend future
+### 1. backend feature
 - [ ] backend app list
 - [x] backend subapp list
 - [x] backend host list
@@ -91,7 +91,7 @@ https://github.com/iamseth/oracledb_exporter
 - [ ] instance copy
 - [ ] instance auto fix rules panel
 
-### 2. agent future
+### 2. agent feature
 - [x] common readtable rfc function , port 23310
 - [x] usercount status data
 - [x] workprocess status
@@ -106,14 +106,16 @@ https://github.com/iamseth/oracledb_exporter
 - [x] oracle_exporter, port 23313
 - [x] single instance start/stop control
 - [x] app all instance start/stop control by sequence
-- [ ] instance move and status api
-- [ ] instance copy and status api
-- [ ] auto fix atom operation: kill os process
+- [x] status api
+- [ ] instance move
+- [ ] instance copy
+- [ ] auto fix atom operation 
+    - [ ] kill os process
 - [x] pull st03 workload monitor data to prometheus
-- [x] pull st03 workload monitor data to es
+- [ ] pull st03 workload monitor data to es
 - [x] pull st02 workload monitor data to prometheus
-- [x] pull st02 workload monitor data to es
-- [ ] pull db02 workload monitor data to prometheus
+- [ ] pull st02 workload monitor data to es
+- [x] pull db02 workload monitor data to prometheus
 - [ ] pull db02 workload monitor data to es
 - [ ] TBD: stad
 
@@ -129,6 +131,10 @@ https://github.com/iamseth/oracledb_exporter
 - [x] background job status
 - [x] dump status SNAP
 - [x] instance status
+- [x] st03 status
+- [x] db02 status
+- [x] hana status
+- [ ] oracle status
 - [ ] transport status
 - [ ] rfc resource status
 - [x] os monitor
@@ -149,8 +155,6 @@ https://github.com/iamseth/oracledb_exporter
 ### 7. unitest and ci
 - [ ] todo...
 
-### 8. hana database monitor and report
-- [ ] todo...
 
 
 
