@@ -59,10 +59,10 @@
       <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button type="success" size="mini" @click="handleStart(scope.row)">
-            启动
+            Start
           </el-button>
           <el-button size="mini" type="danger" @click="handleStop(scope.row)">
-            停止
+            Stop
           </el-button>
         </template>
       </el-table-column>

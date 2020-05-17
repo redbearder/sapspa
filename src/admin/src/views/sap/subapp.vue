@@ -53,19 +53,16 @@
       </el-table-column>
       <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <a href="sapguiup:///{{scope.row.host.hostname}} {{scope.row.instanceno}}">
-            <img src="https://d1.awsstatic.com/product-marketing/AppStream2.0/SAPLogon.0e7ea3303234d757421e5b632960dd292572a34a.png" class="avatar">
-          </a>
           <router-link :to="'/subapps/'+scope.row.subappid+'/instances'" class="link-type">
             <el-button type="primary">
               InstanceList
             </el-button>
           </router-link>
           <el-button type="success" size="mini" @click="handleStart(scope.row)">
-            启动
+            Start
           </el-button>
           <el-button size="mini" type="danger" @click="handleStop(scope.row)">
-            停止
+            Stop
           </el-button>
         </template>
       </el-table-column>

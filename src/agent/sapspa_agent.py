@@ -619,14 +619,14 @@ class SAPCollector(object):
                             st02data['TOTAL_HITRATIO']['AVERAGE'])
                         yield g_st02_callstatics
 
-                        es = Elasticsearch(hosts=[{
-                            "host": "{master_ip}",
-                            "port": 23392
-                        }])
-                        es.index(
-                            index="ST02",
-                            body=st02data,
-                        )
+                        # es = Elasticsearch(hosts=[{
+                        #     "host": "{master_ip}",
+                        #     "port": 23392
+                        # }])
+                        # es.index(
+                        #     index="ST02",
+                        #     body=st02data,
+                        # )
 
                         # st03 summary data by instance
                         st03detail_summary = conn.get_st03_data_summary()
@@ -662,10 +662,10 @@ class SAPCollector(object):
                         yield g_st03detail_steps
                         yield g_st03detail_averageRespTime
 
-                        es.index(
-                            index="ST03",
-                            body=st03detail,
-                        )
+                        # es.index(
+                        #     index="ST03",
+                        #     body=st03detail,
+                        # )
 
                     conn.close()
         '''
