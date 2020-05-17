@@ -3,9 +3,9 @@ from flask_restful import Api, Resource
 
 from app.mapi import bp
 from app.mapi.apps import App, Apps
-from app.mapi.subapps import SubApp, SubApps, SubAppsInApp
+from app.mapi.subapps import SubApp, SubApps, SubAppsInApp, SubAppStatus, SubAppOperation
 from app.mapi.hosts import Host, Hosts
-from app.mapi.instances import Instace, Instances, InstancesInSubApp, InstancesInHost
+from app.mapi.instances import Instace, Instances, InstancesInSubApp, InstancesInHost, InstaceStatus, InstaceOperation
 from app.mapi.tokens import Token, Tokens
 from app.mapi.logins import Login, Logins
 
@@ -16,6 +16,8 @@ api.add_resource(App, "/apps/<appid>")
 
 api.add_resource(SubApps, "/subapps")
 api.add_resource(SubApp, "/subapps/<subappid>")
+api.add_resource(SubAppStatus, "/subapps/<subappid>/status")
+api.add_resource(SubAppOperation, "/subapps/<subappid>/operations")
 api.add_resource(SubAppsInApp, "/apps/<appid>/subapps")
 
 api.add_resource(Hosts, "/hosts")
@@ -23,6 +25,8 @@ api.add_resource(Host, "/hosts/<hostid>")
 
 api.add_resource(Instances, "/instances")
 api.add_resource(Instace, "/instances/<instid>")
+api.add_resource(InstaceStatus, "/instances/<instid>/status")
+api.add_resource(InstaceOperation, "/instances/<instid>/operations")
 api.add_resource(InstancesInSubApp, "/subapps/<subappid>/instances")
 api.add_resource(InstancesInHost, "/hosts/<hostid>/instances")
 

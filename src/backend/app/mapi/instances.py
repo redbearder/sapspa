@@ -3,10 +3,41 @@ from flask_restful import Api, Resource
 from flask_jwt_extended import jwt_required
 from app import db
 from app.utils import bad_request, normal_request, query_request
-from app.models import InstanceModel, InstanceSchema
+from app.models import InstanceModel, InstanceSchema, OperationModel, OperationSchema, OperationSubModel, OperationSubSchema
+import json
+import threading
+import requests
+import time
 
 instance_schema = InstanceSchema()
 instances_schema = InstanceSchema(many=True)
+
+
+def operation_func(**kwargs):
+    if "instlist" in kwargs:
+        pass
+    if 'inst' in kwargs:
+        detail = kwargs['inst']['operationsubdetail']
+        if detail['method'] == 'DELETE':
+            r = requests.delete(detail['url'])
+            if r.status_code == 200:
+                opsub = OperationSubModel.query.get(
+                    kwargs['inst']['operationsubid'])
+                opsub.operationsubstatus = 1
+                op = OperationModel.query.get(kwargs['inst']['operationsid'])
+                op.operationstatus = 1
+                db.session.commit()
+
+        if detail['method'] == 'POST':
+            r = requests.post(detail['url'])
+            if r.status_code == 200:
+                opsub = OperationSubModel.query.get(
+                    kwargs['inst']['operationsubid'])
+                opsub.operationsubstatus = 1
+                op = OperationModel.query.get(kwargs['inst']['operationsid'])
+                op.operationstatus = 1
+                db.session.commit()
+    pass
 
 
 class Instances(Resource):
@@ -73,4 +104,104 @@ class InstancesInHost(Resource):
         return query_request({
             'rows': instances_result,
             'count': instancescount
+        })
+
+
+class InstaceStatus(Resource):
+    def post(self, instid):
+        # start instance
+        inst = InstanceModel.query.get(instid)
+
+        opModel = OperationModel()
+
+        db.session.add(opModel)
+        db.session.flush()
+
+        ipaddressarr = json.loads(inst.host.ipaddress)
+        opsub = {}
+        opsub['operationid'] = opModel.operationid
+        opsub['instanceid'] = instid
+        opsub['operationsubtype'] = 'START'
+        opsub['operationsubdetail'] = {
+            "type": "HTTP",
+            "method": "POST",
+            "url":
+            f"http://{ipaddressarr[0]['ip']}:23310/api/apps/{inst.subapp.subappsid}/instances/{inst.instanceno}/status",
+            "param": {}
+        }
+        opsub['operationsubcomment'] = f'Start Instance {instid}'
+        opsub['operationsubsequence'] = 1
+        opsub['operationsubstatus'] = 0
+        opsub['operationsubstatusassert'] = '1'
+
+        newopsub = dict(opsub)
+
+        operationSubSchema = OperationSubSchema(many=False).load(opsub)
+        opSubModel = OperationSubModel(**operationSubSchema)
+        db.session.add(opSubModel)
+
+        db.session.commit()
+
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "inst": newopsub
+                         }).start()
+
+        return normal_request("create start instance operation success")
+
+    def delete(self, instid):
+        # stop instance
+        inst = InstanceModel.query.get(instid)
+
+        opModel = OperationModel()
+
+        db.session.add(opModel)
+        db.session.flush()
+
+        ipaddressarr = json.loads(inst.host.ipaddress)
+        opsub = {}
+        opsub['operationid'] = opModel.operationid
+        opsub['instanceid'] = instid
+        opsub['operationsubtype'] = 'STOP'
+        opsub['operationsubdetail'] = {
+            "type": "HTTP",
+            "method": "DELETE",
+            "url":
+            f"http://{ipaddressarr[0]['ip']}:23310/api/apps/{inst.subapp.subappsid}/instances/{inst.instanceno}/status",
+            "param": {}
+        }
+        opsub['operationsubcomment'] = f'Stop Instance {instid}'
+        opsub['operationsubsequence'] = 1
+        opsub['operationsubstatus'] = 0
+        opsub['operationsubstatusassert'] = '0'
+
+        newopsub = dict(opsub)
+
+        operationSubSchema = OperationSubSchema().load(opsub)
+        opSubModel = OperationSubModel(**operationSubSchema)
+        db.session.add(opSubModel)
+        db.session.flush()
+        newopsub['operationsubid'] = opSubModel.operationsubid
+        db.session.commit()
+
+        threading.Thread(target=operation_func,
+                         name="operation_func_thread",
+                         kwargs={
+                             "inst": newopsub
+                         }).start()
+
+        return normal_request("create stop instance operation success")
+
+    def get(self, subappid):
+        pass
+
+
+class InstaceOperation(Resource):
+    def get(self, instid):
+        opList = OperationSubModel.query.filter_by(instanceid=instid).all()
+
+        return query_request({
+            'rows': OperationSubSchema(many=True).dump(opList),
+            'count': len(opList)
         })

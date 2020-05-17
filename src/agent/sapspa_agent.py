@@ -23,6 +23,7 @@ from decimal import Decimal
 import consul
 import yaml
 import shlex, subprocess
+from elasticsearch import Elasticsearch
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -85,11 +86,29 @@ def get_host_info():
 
 def get_sid_list():
     sidlist: List[str] = []
-    dirlist = os.listdir('/sapmnt')
-    for dir in dirlist:
-        if len(dir) == 3:
-            sidlist.append(dir)
-    return sidlist
+    try:
+        dirlist = os.listdir('/sapmnt')
+        for dir in dirlist:
+            if len(dir) == 3:
+                sidlist.append(dir)
+        return sidlist
+    except:
+        return []
+
+
+def get_hdb_sid_list():
+    sidlist: List[str] = []
+    try:
+        dirlist = os.listdir('/usr/sap')
+        for dir in dirlist:
+            if len(dir) == 3:
+                if os.path.exists(f'/usr/sap/{dir}/SYS/profile/DEFAULT.PFL'):
+                    sidlist.append(dir)
+
+        appsidlist = get_sid_list()
+        return list(set(sidlist) - set(appsidlist))
+    except:
+        return []
 
 
 def get_instance_list_by_sid(sid):
@@ -111,6 +130,25 @@ def get_instance_list_by_sid(sid):
             else:
                 # ASCS
                 p['type'] = 'ASCS'
+            instance.append(p)
+    return instance
+
+
+def get_hdb_list_by_sid(sid):
+    instance: List[Dict] = []
+    profilepath = '/usr/sap/' + sid + '/SYS/profile'
+    list1 = os.listdir(profilepath)
+    for l in list1:
+        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+            p = {}
+            p['profile'] = l
+            arr = l.split('_')
+            p['sysnr'] = arr[1][-2:]
+            p['host'] = arr[2]
+            p['sid'] = arr[0]
+            i = arr[2] + '_' + arr[0] + '_' + arr[1][-2:]
+            p['servername'] = i
+            p['type'] = 'HDB'
             instance.append(p)
     return instance
 
@@ -267,6 +305,33 @@ class R3rfcconn(object):
         tablename = 'E070'
         return self.get_table_data(tablename)
 
+    def get_st02_data(self):
+        kwparam = {}
+        st02data = self.get_rfc_data('SAPTUNE_GET_SUMMARY_STATISTIC')
+        del st02data['TABLE_QUALITIES']
+        del st02data['TABLE_STATISTIC']
+        del st02data['TABLE_STATISTIC_64']
+        del st02data['CURSOR_CACHE_INFO']
+        del st02data['MODE_MEMORY_HISTORY']
+        del st02data['INTERNAL_EXTERNAL_MODES_MEMORY']
+        del st02data['BUFFER_STATISTIC_64']
+        st02data_json = json.dumps(st02data, cls=DecimalEncoder)
+        return json.loads(st02data_json)
+
+    def get_st03_data_summary(self):
+        kwparam = {}
+        kwparam['READ_START_DATE'] = date.today()
+        kwparam['READ_END_DATE'] = date.today()
+        kwparam['READ_START_TIME'] = (datetime.now() -
+                                      timedelta(seconds=60)).strftime('%H%M%S')
+        kwparam['READ_END_TIME'] = (datetime.now() -
+                                    timedelta(seconds=0)).strftime('%H%M%S')
+        st03datadetail = self.get_rfc_data('SAPWL_SNAPSHOT_FROM_REMOTE_SYS',
+                                           **kwparam)
+        st03datadetail_json = json.dumps(st03datadetail['SUMMARY'],
+                                         cls=DecimalEncoder)
+        return json.loads(st03datadetail_json)
+
     def close(self):
         self.conn.close()
 
@@ -276,17 +341,17 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
     return 'This is a wrong Index Page'
 
 
-@app.route('/api/hosts')
+@app.route('/api/hosts', methods=['GET'])
 def hosts():
     return 'current hosts info'
 
 
-@app.route('/api/apps')
+@app.route('/api/apps', methods=['GET'])
 def subapps_info():
     '''
     here app means subapp
@@ -295,7 +360,7 @@ def subapps_info():
     return 'current apps, subapps, instances, profiles info'
 
 
-@app.route('/api/apps/<string:sid>')
+@app.route('/api/apps/<string:sid>', methods=['GET'])
 def subapp_info(sid):
     '''
     all subapp infomation includes instances info
@@ -305,14 +370,51 @@ def subapp_info(sid):
     return 'current subapp_info info'
 
 
-@app.route('/api/apps/<string:sid>/instances')
+@app.route('/api/apps/<string:sid>/instances', methods=['GET'])
 def subapp_instances(sid):
     return 'current subapp_instances info'
 
 
-@app.route('/api/apps/<string:sid>/instances/<string:instanceid>')
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>',
+           methods=['GET'])
 def subapp_instance_info(sid, instanceid):
     return 'current subapp_instances info'
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['POST'])
+def subapp_instance_start(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_start_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function StartSystem"'
+    instance_start_cmd_args = shlex.split(instance_start_cmd)
+    sp = subprocess.run(instance_start_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    return output
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['DELETE'])
+def subapp_instance_stop(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_stop_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function StopSystem"'
+    instance_stop_cmd_args = shlex.split(instance_stop_cmd)
+    sp = subprocess.run(instance_stop_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    return output
+
+
+@app.route('/api/apps/<string:sid>/instances/<string:instanceid>/status',
+           methods=['GET'])
+def subapp_instance_status(sid, instanceid):
+    sysnr = instanceid[-2:]
+    instance_check_cmd = f'su - {sid.lower()}adm -c "sapcontrol -nr {sysnr} -function GetProcessList"'
+    instance_check_cmd_args = shlex.split(instance_check_cmd)
+    sp = subprocess.run(instance_check_cmd_args, capture_output=True)
+    output = sp.stdout.decode('utf-8')
+    if 'Red' in output or 'GRAY' in output:
+        return '0'
+    else:
+        return '1'
 
 
 class SAPCollector(object):
@@ -469,6 +571,102 @@ class SAPCollector(object):
                                              running_upd_count)
                         yield g_wpcount
 
+                        # st02 data by instance
+                        st02data = conn.get_st02_data()
+                        st02data['instance'] = profile
+                        g_st02_sapmemory = GaugeMetricFamily(
+                            "SAPMemory",
+                            'SAP Memory Current Use % in TCode ST02',
+                            labels=[
+                                'SID', 'Instance', 'SAPMemoryCurrentUsePercent'
+                            ])
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'PageArea'],
+                            round(
+                                float(st02data['PAGING_AREA']['CURR_USED']) /
+                                float(st02data['PAGING_AREA']['AREA_SIZE']), 4)
+                            * 100)
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'ExtendedMemory'],
+                            round(
+                                float(
+                                    st02data['EXTENDED_MEMORY_USAGE']['USED'])
+                                / float(st02data['EXTENDED_MEMORY_USAGE']
+                                        ['TOTAL']), 4) * 100)
+                        g_st02_sapmemory.add_metric(
+                            [sid, profile, 'HeapMemory'],
+                            round(
+                                float(st02data['HEAP_MEMORY_USAGE']['USED']) /
+                                float(st02data['HEAP_MEMORY_USAGE']['TOTAL']),
+                                4) * 100)
+                        yield g_st02_sapmemory
+
+                        g_st02_callstatics = GaugeMetricFamily(
+                            "CallStatistics",
+                            'SAP Call Statistics HitRadio % in TCode ST02',
+                            labels=[
+                                'SID', 'Instance',
+                                'CallStatisticsHitRadioPercent'
+                            ])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'DIRECT'],
+                            st02data['TOTAL_HITRATIO']['DIRECT'])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'SEQUENTIAL'],
+                            st02data['TOTAL_HITRATIO']['SEQUENTIAL'])
+                        g_st02_callstatics.add_metric(
+                            [sid, profile, 'AVERAGE'],
+                            st02data['TOTAL_HITRATIO']['AVERAGE'])
+                        yield g_st02_callstatics
+
+                        # es = Elasticsearch(hosts=[{
+                        #     "host": "{master_ip}",
+                        #     "port": 23392
+                        # }])
+                        # es.index(
+                        #     index="ST02",
+                        #     body=st02data,
+                        # )
+
+                        # st03 summary data by instance
+                        st03detail_summary = conn.get_st03_data_summary()
+                        st03detail = {}
+                        st03detail['instance'] = profile
+                        st03detail['SUMMARY'] = st03detail_summary
+                        g_st03detail_steps = GaugeMetricFamily(
+                            "DialogSteps",
+                            'Dialog Steps in TCode ST03',
+                            labels=['SID', 'Instance', 'DialogSteps'])
+                        g_st03detail_averageRespTime = GaugeMetricFamily(
+                            "AverageRespTime",
+                            'Average Resp Time in TCode ST03',
+                            labels=['SID', 'Instance', 'AverageRespTime'])
+                        g_st03detail_averageDBTime = GaugeMetricFamily(
+                            "AverageDBTime",
+                            'Average DB Time in TCode ST03',
+                            labels=['SID', 'Instance', 'AverageDBTime'])
+
+                        for sumary in st03detail_summary:
+                            g_st03detail_steps.add_metric(
+                                [sid, profile, sumary['TASKTYPE']],
+                                float(sumary['COUNT']))
+                            g_st03detail_averageRespTime.add_metric(
+                                [sid, profile, sumary['TASKTYPE']],
+                                round(
+                                    float(sumary['RESPTI']) /
+                                    float(sumary['COUNT'])))
+                            # g_st03detail_averageDBTime.add_metric(
+                            #     [sid, profile, sumary['TASKTYPE']],
+                            #     round(sumary['RESPTI'] / sumary['COUNT']))
+
+                        yield g_st03detail_steps
+                        yield g_st03detail_averageRespTime
+
+                        # es.index(
+                        #     index="ST03",
+                        #     body=st03detail,
+                        # )
+
                     conn.close()
         '''
         during job count, by job type
@@ -555,8 +753,33 @@ for sid in sidList:
     for instance in get_instance_list_by_sid(sid):
         instance_list.append(instance)
     subapp['instance'] = instance_list
+    # cat /etc/services | grep sapmsDM0 |awk '{print $2}'
+    # get_sapmsserv_cmd = "cat /etc/services | grep sapms%s |awk '{print $2}'" % sid
+    get_sapmsserv_cmd = "cat /etc/services"
+    get_sapmsserv_cmd_args = shlex.split(get_sapmsserv_cmd)
+    sp = subprocess.run(get_sapmsserv_cmd_args, capture_output=True)
+    outputlist = sp.stdout.decode('utf-8').split("\n")
+    for l in outputlist:
+        if "sapms%s" % sid in l:
+            msbs = l.split('\t')
+            servb = msbs[1]
+            serv = servb.split('/')[0]
+            subapp['msserv'] = int(serv)
+            break
     subapp_list.append(subapp)
-post_dict = {"host": get_host_info(), "app": subapp_list}
+
+hdb_list: List[Dict] = []
+for sid in get_hdb_sid_list():
+    hdbapp: Dict = {}
+    hdbapp['sid'] = sid
+    instance_list: List[Dict] = []
+    for instance in get_hdb_list_by_sid(sid):
+        instance_list.append(instance)
+    hdbapp['instance'] = instance_list
+    hdbapp['msserv'] = '00'
+    hdb_list.append(hdbapp)
+
+post_dict = {"host": get_host_info(), "app": subapp_list, "hdb": hdb_list}
 print(post_dict)
 
 r = requests.post(f'http://{master_ip}:23381/api/v1/agents',

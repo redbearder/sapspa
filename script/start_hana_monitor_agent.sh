@@ -116,28 +116,13 @@ function install_python3()
         fi
 }
 
-function install_agent_requirements()
+function install_hana_exporter_requirements()
 {
   # pip3 install -r requirements.txt
   echo "Install Python requirements"
-  pip3 install -r ${BASE_DIR}src/agent/requirements.txt
+  pip3 install -r ${BASE_DIR}src/hana_exporter/requirements.txt
 }
 
-
-function install_pyrfc()
-{
-  # install nwrfc lib
-  echo "install nwrfc lib"
-  unzip ${BASE_DIR}lib/nwrfc750P_4-70002752.zip -d ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/nwrfcsdk /usr/sap/nwrfcsdk
-  touch /etc/ld.so.conf.d/nwrfcsdk.conf
-  echo "# include nwrfcsdk" > /etc/ld.so.conf.d/nwrfcsdk.conf
-  echo "/usr/sap/nwrfcsdk/lib" >> /etc/ld.so.conf.d/nwrfcsdk.conf
-  ldconfig
-  # install pyrfc module
-  echo "install pyrfc module"
-  pip3 install ${BASE_DIR}lib/pyrfc-1.9.98-cp37-cp37m-linux_x86_64.whl
-}
 
 function install_consul()
 {
@@ -154,14 +139,12 @@ function install_consul()
   fi
 }
 
-function install_sapspa_agent()
+function install_hana_exporter()
 {
   # start sapspa_agent.py
   pyenv local ${PYTHON_VERSION}
-  echo "start sapspa_agent.py"
-  sed -i "s?{master_ip}?${MASTER_IP}?g" ${BASE_DIR}src/agent/sapspa_agent.py
-  pip3 install uwsgi
-  uwsgi --http 0.0.0.0:23310 --wsgi-file ${BASE_DIR}src/agent/sapspa_agent.py --callable app_dispatch --daemonize /var/log/uwsgi_sapspa_agent.log
+  echo "start hana exporter"
+  nohup ${BASE_DIR}src/hana_exporter/hana_exporter -c ${BASE_DIR}src/hana_exporter/config.json -m ${BASE_DIR}src/hana_exporter/metrics.json >/dev/null 2>&1 &
 }
 
 function install_node_exporter()
@@ -176,29 +159,15 @@ function install_node_exporter()
   nohup node_exporter --web.listen-address=":23311" >/dev/null 2>&1 &
 }
 
-function install_filebeat()
-{
-  # download ELK filebeat
-  wget https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${ELK_VERSION}-linux-x86_64.tar.gz -O ${BASE_DIR}script/download/filebeat.tar.gz
-  tar zxvf ${BASE_DIR}script/download/filebeat.tar.gz -C ${BASE_DIR}script/download/
-  mv ${BASE_DIR}script/download/filebeat-${ELK_VERSION}-linux-x86_64 ${BASE_DIR}app/filebeat
-  # start filebeat
-  sed -i "s?localhost:23392?${MASTER_IP}:23392?g" ${BASE_DIR}etc/filebeat/filebeat.yml
-#  sed -i 's?index: "filebeat?index: "'`hostname`'-filebeat?g' ${BASE_DIR}etc/filebeat/filebeat.yml
-  cp -Rf ${BASE_DIR}etc/filebeat /etc/
-  nohup ${BASE_DIR}app/filebeat/filebeat -c ${BASE_DIR}etc/filebeat/filebeat.yml >/dev/null 2>&1 &
-}
 
 install_pyenv
 install_python3
-install_agent_requirements
-install_pyrfc
+install_hana_exporter_requirements
 install_consul
-install_sapspa_agent
-install_filebeat
+install_hana_exporter
 count=`ps -ef |grep node_exporter |grep -v "grep" |wc -l`
 if [ 0 == $count ];then
   install_node_exporter
 fi
 
-echo "start agent done"
+echo "start hana monitor agent done"

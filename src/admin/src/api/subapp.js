@@ -15,6 +15,27 @@ export function fetchSubapp(subappid) {
   })
 }
 
+export function fetchSubappStatus(subappid) {
+  return request({
+    url: `/subapps/${subappid}/status`,
+    method: 'get'
+  })
+}
+
+export function startSubapp(subappid) {
+  return request({
+    url: `/subapps/${subappid}/status`,
+    method: 'post'
+  })
+}
+
+export function stopSubapp(subappid) {
+  return request({
+    url: `/subapps/${subappid}/status`,
+    method: 'delete'
+  })
+}
+
 export function createSubapp(data) {
   return request({
     url: '/subapps',

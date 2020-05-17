@@ -15,6 +15,27 @@ export function fetchInstance(instanceid) {
   })
 }
 
+export function fetchInstanceStatus(instanceid) {
+  return request({
+    url: `/instances/${instanceid}/status`,
+    method: 'get'
+  })
+}
+
+export function startInstance(instanceid) {
+  return request({
+    url: `/instances/${instanceid}/status`,
+    method: 'post'
+  })
+}
+
+export function stopInstance(instanceid) {
+  return request({
+    url: `/instances/${instanceid}/status`,
+    method: 'delete'
+  })
+}
+
 export function createInstance(data) {
   return request({
     url: '/instances',

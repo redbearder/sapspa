@@ -20,6 +20,7 @@ class Agents(Resource):
         data = request.get_json()
         host_info = data['host']
         subapp_list = data['app']
+        hdbapp_list = data['hdb'] if "hdb" in data else []
         """
         {
             "host": {
@@ -89,7 +90,12 @@ class Agents(Resource):
             if oldsubapp:
                 subappid = oldsubapp.subappid
             else:
-                subappschema = subapp_schema.load({"subappsid": subapp['sid']})
+                subappschema = subapp_schema.load({
+                    "subappsid":
+                    subapp['sid'],
+                    "subappmsserv":
+                    subapp['msserv']
+                })
                 subapp_model = SubappModel(**subappschema)
                 db.session.add(subapp_model)
                 db.session.commit()
@@ -115,5 +121,43 @@ class Agents(Resource):
                     instance_model = InstanceModel(**instanceschema)
                     db.session.add(instance_model)
                     db.session.commit()
+
+            for hdbapp in hdbapp_list:
+                oldsubapp = SubappModel.query.filter_by(
+                    subappsid=hdbapp['sid']).first()
+                if oldsubapp:
+                    subappid = oldsubapp.subappid
+                else:
+                    subappschema = subapp_schema.load({
+                        "subappsid":
+                        hdbapp['sid'],
+                        "subappmsserv":
+                        hdbapp['msserv']
+                    })
+                    subapp_model = SubappModel(**subappschema)
+                    db.session.add(subapp_model)
+                    db.session.commit()
+                    subappid = subapp_model.subappid
+                for instance in hdbapp['instance']:
+                    oldinstance = InstanceModel.query.filter_by(
+                        instanceid=instance['profile']).first()
+                    if oldinstance:
+                        pass
+                    else:
+                        instanceschema = instance_schema.load({
+                            "instanceid":
+                            instance['profile'],
+                            "instanceno":
+                            instance['sysnr'],
+                            "instancetype":
+                            instance['type'],
+                            "subappid":
+                            subappid,
+                            "hostid":
+                            hostid,
+                        })
+                        instance_model = InstanceModel(**instanceschema)
+                        db.session.add(instance_model)
+                        db.session.commit()
 
         return normal_request("collect agent info success")

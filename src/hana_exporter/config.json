@@ -1,0 +1,9 @@
+{
+  "exposition_port": 23312,
+  "multi_tenant": false,
+  "timeout": 600,
+  "logging": {
+    "config_file": "./logging_config.ini",
+    "log_file": "hanadb_exporter.log"
+  }
+}

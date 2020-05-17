@@ -44,9 +44,26 @@
           <span>{{ scope.row.host.hostname }}</span>
         </template>
       </el-table-column>
+      <el-table-column :label="'status'" class-name="status-col" width="50">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.status | statusFilter">
+            {{ scope.row.status }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column :label="'CreatedAt'" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column :label="'Actions'" align="center" width="200" class-name="small-padding fixed-width">
+        <template slot-scope="scope">
+          <el-button type="success" size="mini" @click="handleStart(scope.row)">
+            Start
+          </el-button>
+          <el-button size="mini" type="danger" @click="handleStop(scope.row)">
+            Stop
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -57,7 +74,7 @@
 </template>
 
 <script>
-import { fetchInstanceList, fetchInstanceListInHost, fetchInstanceListInSubApp } from '@/api/instance'
+import { fetchInstanceList, fetchInstanceListInHost, fetchInstanceListInSubApp, fetchInstanceStatus, startInstance, stopInstance } from '@/api/instance'
 import waves from '@/directive/waves' // Waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
@@ -69,9 +86,9 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
+        START: 'success',
         draft: 'info',
-        deleted: 'danger'
+        STOP: 'danger'
       }
       return statusMap[status]
     }
@@ -103,7 +120,8 @@ export default {
       },
       downloadLoading: false,
       active: 1,
-      innerVisible: false
+      innerVisible: false,
+      currentInstance: {}
     }
   },
   created() {
@@ -125,6 +143,7 @@ export default {
         this.total = response.data.count
 
         this.listLoading = false
+          setInterval(this.getInstanceStatus(), 10)
       })
     },
     getListInHost(hostid) {
@@ -178,6 +197,76 @@ export default {
           return v[j]
         }
       }))
+    },
+    getInstanceStatus() {
+      for (let i = 0; i < this.list.length; i++) {
+        const i = this.list[i]
+        fetchInstanceStatus(i.instid).then(response => {
+          if (response === '1') {
+            this.list[i]['status'] = 'START'
+          } else {
+            this.list[i]['status'] = 'STOP'
+          }
+        })
+      }
+    },
+    handleStart(row) {
+      this.currentInstance = Object.assign({}, row) // copy obj
+      this.$confirm('确认启动？')
+        .then(_ => {
+          this.start()
+        })
+        .catch(_ => {})
+    },
+    start() {
+      startInstance(this.currentInstance.instid)
+        .then(res => {
+          this.$notify({
+            title: '成功',
+            message: '开始启动',
+            type: 'success',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+        .catch(e => {
+          this.$notify({
+            title: '成功',
+            message: '开始启动',
+            type: 'danger',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+    },
+    handleStop(row) {
+      this.currentInstance = Object.assign({}, row) // copy obj
+      this.$confirm('确认停止？')
+        .then(_ => {
+          this.stop()
+        })
+        .catch(_ => {})
+    },
+    stop() {
+      stopInstance(this.currentInstance.instid)
+        .then(res => {
+          this.$notify({
+            title: '成功',
+            message: '开始停止',
+            type: 'success',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
+        .catch(e => {
+          this.$notify({
+            title: '成功',
+            message: '开始停止',
+            type: 'danger',
+            duration: 2000
+          })
+          this.dialogFormVisible = false
+        })
     }
   }
 }
