@@ -130,7 +130,6 @@ export default {
     } else {
       this.getList()
     }
-
   },
   methods: {
     getList() {
@@ -140,7 +139,7 @@ export default {
         this.total = response.data.count
 
         this.listLoading = false
-          setInterval(this.getSubappStatus(), 10)
+        setInterval(this.getSubappStatus(), 10)
       })
     },
     getSubappListInApp(appid) {
