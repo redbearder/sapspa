@@ -1,4 +1,5 @@
 0.0.0.0:23380 {
 	root ./dist/
-    gzip
+	proxy /mapi backend:23381
+  gzip
 }

@@ -3,7 +3,7 @@ FROM node:12.16.1
 WORKDIR /opt/admin
 
 COPY . /opt/admin/
-RUN sed -i "s?localhost?backend?g" .env.production
+RUN sed -i "s?http\:\/\/localhost\:23381??g" .env.production
 RUN yarn
 RUN npm run build:prod
 RUN wget "https://caddyserver.com/download/linux/amd64?license=personal&telemetry=on" -O caddy_linux_amd64.tar.xz
