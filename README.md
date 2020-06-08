@@ -158,7 +158,10 @@ https://github.com/iamseth/oracledb_exporter
 ### 7. unitest and ci
 - [ ] todo...
 
-
+### 8. auto upgrade
+- [ ] agent upgrade
+- [ ] master upgrade
+- [ ] app upgrade
 
 
 ```
