@@ -116,7 +116,8 @@ def get_instance_list_by_sid(sid):
     profilepath = '/sapmnt/' + sid + '/profile'
     list1 = os.listdir(profilepath)
     for l in list1:
-        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+        m = re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l)
+        if m and m.group() == l:
             p = {}
             p['profile'] = l
             arr = l.split('_')
@@ -139,7 +140,8 @@ def get_hdb_list_by_sid(sid):
     profilepath = '/usr/sap/' + sid + '/SYS/profile'
     list1 = os.listdir(profilepath)
     for l in list1:
-        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+        m = re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l)
+        if m and m.group() == l:
             p = {}
             p['profile'] = l
             arr = l.split('_')
@@ -158,7 +160,8 @@ def get_instance_servername_list_by_sid(sid):
     profilepath = '/sapmnt/' + sid + '/profile'
     list1 = os.listdir(profilepath)
     for l in list1:
-        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+        m = re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l)
+        if m and m.group() == l:
             p = {}
             p['profile'] = l
             if 'ASCS' not in l:
@@ -729,7 +732,8 @@ for sid in sidList:
     profilepath = '/sapmnt/' + sid + '/profile'
     list1 = os.listdir(profilepath)
     for l in list1:
-        if '.' not in l and re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l):
+        m = re.match(sid + '_[A-Z0-9]+_[a-zA-Z0-9]+', l)
+        if m and m.group() == l:
             arr = l.split('_')
             instanceid = arr[1]
             input_path_list.append(f'/usr/sap/{sid}/{instanceid}/work/*')

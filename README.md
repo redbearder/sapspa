@@ -41,7 +41,12 @@ docker-compose -f docker-compose-master.yml up -d
 
 ```
 cd sapspa/script
+
+# internet user
 bash start_agent.sh --master=MASTER_IP
+
+# intranet user
+bash intranet_start_agent.sh --master=MASTER_IP
 ```
 * With Docker
 
@@ -56,7 +61,12 @@ docker-compose -f docker-compose-agent.yml up -d
 
 ```
 cd sapspa/script
+
+# internet user
 bash start_hana_monitor_agent.sh --master=MASTER_IP
+
+# intranet user
+bash intranet_start_hana_monitor_agent.sh --master=MASTER_IP
 ```
 ### 2. Installation For Oracle DB
 ```
@@ -154,6 +164,8 @@ https://github.com/iamseth/oracledb_exporter
 - [x] agent
 - [x] master
 - [x] hana_monitor
+- [x] intranet agent
+- [x] intranet hana_monitor
 
 ### 7. unitest and ci
 - [ ] todo...
