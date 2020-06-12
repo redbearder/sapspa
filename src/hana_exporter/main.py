@@ -189,13 +189,14 @@ def run():
                 hana_config['port'],
                 user=hana_config['user'],
                 password=hana_config['password'],
-                database=sid,
+                database=hana_config['database']
+                if hana_config['database'] else sid,
                 # userkey=hana_config['userkey'],
                 multi_tenant=config.get('multi_tenant', False),
                 timeout=config.get('timeout', 600))
         else:
             dbs.start('127.0.0.1',
-                      hana_config.get('port', 30013),
+                      30013,
                       userkey="SYSTEMDB",
                       database=sid,
                       multi_tenant=config.get('multi_tenant', False),

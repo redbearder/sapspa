@@ -150,7 +150,7 @@ function install_consul()
   count=`ps -ef |grep consul |grep -v "grep" |wc -l`
   if [ 0 == $count ];then
         echo "start consul"
-        nohup consul agent -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -join=${MASTER_IP} -dns-port=23346 -http-port=23345 -retry-join "[::1]:23341" -serf-wan-port=23342 >/dev/null 2>&1 &
+        nohup consul agent -data-dir=${BASE_DIR}data/consul -ui -client=0.0.0.0 -bind=0.0.0.0 -join=${MASTER_IP}:23341 -dns-port=23346 -http-port=23345 -serf-lan-port=23341 -serf-wan-port=23342 >/dev/null 2>&1 &
   fi
 }
 

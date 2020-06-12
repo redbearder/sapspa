@@ -1,4 +1,4 @@
 prometheus_client==0.7.1
 hdbcli==2.4.194
-consul==0.1.0
+python-consul==1.1.0
 pyhdb==0.3.4
