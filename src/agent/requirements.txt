@@ -7,4 +7,4 @@ configobj==5.0.6
 requests==2.22.0
 python-consul==1.1.0
 pyrfc==0.1.2
-PyYAML==5.3
+PyYAML==5.4
