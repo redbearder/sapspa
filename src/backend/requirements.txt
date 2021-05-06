@@ -4,7 +4,7 @@ Flask_JWT_Extended==3.24.0
 Flask_Babel==0.11.2
 Flask_Migrate==2.1.1
 Flask_Moment==0.5.2
-Flask_Cors==3.0.8
+Flask_Cors==3.0.9
 Flask_Login==0.4.0
 rq==1.1.0
 Flask_RESTful==0.3.7
